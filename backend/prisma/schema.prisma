@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  role       Role     @default(USER)
+  duties     Duty[]
+  avatar     String?  // 🟢 この1行だけ追加すればOKです！
+}
+enum Role {
+  USER
+  ADMIN
+}
+
+model Duty {
+  id         Int      @id @default(autoincrement())
+  date       String    
+  status     Status   @default(PENDING)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  keyLog     KeyLog?
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  REJECTED
+  NOT_NEEDED   // 🟢 We will add this
+}
+
+model KeyLog {
+  id         Int      @id @default(autoincrement())
+  dutyId     Int      @unique
+  duty       Duty     @relation(fields: [dutyId], references: [id])
+  borrowedAt String?   
+  returnedAt String?   
+}

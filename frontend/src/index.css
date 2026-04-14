@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* 画面全体の背景色をライトベージュに固定（白い隙間対策） */
+body {
+  background-color: #FAF8F5;
+}
+
+/* ==========================================
+   🍏 MacBook Style Scrollbar (Global)
+   ========================================== */
+
+/* WebKit系（Chrome, Safari, Edgeなど）のカスタマイズ */
+::-webkit-scrollbar {
+  width: 8px;  /* 縦スクロールバーの太さ */
+  height: 8px; /* 横スクロールバーの太さ */
+  background-color: transparent;
+}
+
+/* スクロールバーの背景（トラック） */
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+/* スクロールバーの動く部分（つまみ） */
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2); /* 半透明のグレー */
+  border-radius: 10px;
+  /* 透明なボーダーを入れて、少し浮いているような余白を作るテクニック */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* ホバー時（マウスを乗せた時）は少し濃くする */
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* 上下左右の矢印ボタンを完全に隠す */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Firefox用の対応（細くする設定） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
