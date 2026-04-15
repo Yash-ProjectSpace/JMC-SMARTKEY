@@ -181,14 +181,34 @@ app.get('/api/schedule', async (req, res) => {
 // 2. Update a Duty Status & Smart Reassign / Undo
 app.patch('/api/schedule/:id', async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body; 
+  const { status, manualAssignee } = req.body; // 🟢 FIX: extract manualAssignee 
 
-  console.log(`\n[API] 📝 PATCH /api/schedule/${id} - Request: ${status}`);
-
+  console.log(`\n[API] 📝 PATCH /api/schedule/${id} - Request: ${status || manualAssignee}`);
   try {
     const existingDuty = await prisma.duty.findUnique({ where: { id: parseInt(id) } });
     if (!existingDuty) return res.status(404).json({ error: "Duty not found" });
-    
+    // ==========================================
+    // 🛠️ MANUAL OVERRIDE: Admin explicitly changes the assignee
+    // ==========================================
+    if (manualAssignee) {
+      console.log(`[ADMIN OVERRIDE] 🛠️ Reassigning duty ${id} to ${manualAssignee}`);
+      
+      const targetUser = await prisma.user.findFirst({ where: { name: manualAssignee } });
+      if (!targetUser) return res.status(404).json({ error: "User not found" });
+
+      const updatedDuty = await prisma.duty.update({
+        where: { id: parseInt(id) },
+        data: {
+          userId: targetUser.id,
+          status: 'PENDING' // 🟢 Reset to pending so the new person has to accept
+        },
+        include: { user: true }
+      });
+
+      await notifyUser(targetUser.name, `🛠️ *管理者による指定*\n管理者があなたを ${updatedDuty.date} の鍵開け当番に指定しました。システムから承諾をお願いします。`);
+      
+      return res.json(updatedDuty);
+    }
     const previousStatus = existingDuty.status;
 
     const updatedDuty = await prisma.duty.update({
@@ -235,7 +255,8 @@ app.patch('/api/schedule/:id', async (req, res) => {
       });
 
       // Send a notification to the chat
-      await notifyAllUsers(`🛑 *お知らせ*\n${updatedDuty.date} は休業等のため、鍵開け当番が【不要】となりました。`);
+      // 🟢 全員通知を廃止し、担当者本人のみに指定のメッセージを送信
+      await notifyUser(updatedDuty.user.name, `🛑${updatedDuty.date}は祝日または休業のため、鍵開け当番は不要です。`);
       
       return res.json(updatedDuty);
     }
@@ -264,7 +285,7 @@ app.patch('/api/schedule/:id', async (req, res) => {
 
       if (!bestCandidate) {
         console.log(`[SMART-REASSIGN] 🚨 No candidates left! Everyone rejected.`);
-        await notifyAdmins(`🚨 *Warning*\nAll candidates have declined the key duty for ${targetDateStr}! Administrators must manually assign someone.`);
+       await notifyAdmins(`🚨 *警告：候補者なし*\n${targetDateStr} の当番を *${updatedDuty.user.name}* さんが不可としましたが、他に代われる人がいません！手動で調整してください。`);
         
         // 🟢 FIX: Added return here to match your other blocks safely
         return res.json(updatedDuty); 
@@ -279,8 +300,12 @@ app.patch('/api/schedule/:id', async (req, res) => {
       });
       
       console.log(`[SMART-REASSIGN] 🎉 Assigned to: ${bestCandidate.name}`);
-      
-      await notifyUser(bestCandidate.name, `🔄 *Automated Reassignment*\nYou have been assigned the new key duty for ${newDuty.date} because the previous assignee declined. Please log in to the system to Accept or Decline.`);
+
+      // 🟢 1. 管理者へ「誰が不可で、誰に再割り当てされたか」を詳しく通知
+      await notifyAdmins(`❌ *不可および自動再割当*\n${targetDateStr} の担当だった *${updatedDuty.user.name}* さんが不可としたため、新しい担当者として *${bestCandidate.name}* さんを自動割り当てしました。`);
+
+      // 🟢 2. 新しい担当者本人へ通知
+      await notifyUser(bestCandidate.name, `${updatedDuty.user.name}さんが不可のため、代わりに${newDuty.date}の鍵開けとなりました。`);
     }
 
     res.json(updatedDuty);
@@ -298,6 +323,7 @@ app.get('/api/stats', async (req, res) => {
       const familyName = user.name.split(' ')[0] || user.name; 
       return {
         name: familyName,
+        fullName: user.name, // 🟢 ADD THIS LINE: Pass the exact database name for the dropdown
         accepted: user.duties.filter(d => d.status === 'ACCEPTED').length,
         rejected: user.duties.filter(d => d.status === 'REJECTED').length,
       };
@@ -517,33 +543,25 @@ app.put('/api/users/:id', async (req, res) => {
 // ==========================================
 
 // ① FRIDAY 8:00 AM: Send 2-week schedule to ALL users
+// ① FRIDAY 8:00 AM: Send 2-week schedule to ALL users
+
 cron.schedule('1 8 * * 5', async () => {
+
   console.log('⏰ Running Friday 8:01 AM Cron: Weekly Schedule Announcement');
+
   try {
-    const upcomingDates = await getNextTwoWeeksWorkingDays();
-    if (upcomingDates.length === 0) return;
 
-    const duties = await prisma.duty.findMany({
-      where: { date: { in: upcomingDates }, status: { not: 'REJECTED' } },
-      include: { user: true },
-      orderBy: { date: 'asc' }
-    });
-
-    if (duties.length === 0) return;
-
-    let msg = `📅 *【本社】次週・次々週の鍵開け当番スケジュール*\n\n`;
-    duties.forEach(d => {
-      const statusIcon = d.status === 'ACCEPTED' ? '✅ 承諾済' : '⏳ 未回答';
-      msg += `・${d.date} : ${d.user.name} (${statusIcon})\n`;
-    });
-    msg += `\n担当者の方は、システムにログインして「承諾」または「不可」の回答をお願いします。`;
+    const msg = "来週および再来週の鍵開けスケジュールをお知らせします。割り当てられた日程をご確認のうえ、「承諾」または「不可」を選択してください。";
 
     await notifyAllUsers(msg);
-  } catch (error) {
-    console.error('❌ Error in Friday cron:', error);
-  }
-});
 
+  } catch (error) {
+
+    console.error('❌ Error in Friday cron:', error);
+
+  }
+
+});
 // ② DAILY 8:00 AM: Individual Reminders (3 days before & 1 day before)
 cron.schedule('0 8 * * *', async () => {
   console.log('⏰ Running Daily 8:00 AM Cron: Individual Reminders');
@@ -562,24 +580,19 @@ cron.schedule('0 8 * * *', async () => {
       const reminder3DaysBefore = await getTargetWorkingDateBefore(duty.date, 3);
       const reminder1DayBefore = await getTargetWorkingDateBefore(duty.date, 1);
 
-      if (todayStr === reminder3DaysBefore) {
-        const actionText = duty.status === 'PENDING' 
-          ? 'まだ回答されていません。システムから「承諾」または「不可」を選択してください。' 
-          : '当番の3営業日前です。よろしくお願いします。';
-        await notifyUser(duty.user.name, `🔔 *鍵開け当番 リマインド (3日前)*\n${duty.date} の当番予定が近づいています。\n\n${actionText}`);
-      } 
-      else if (todayStr === reminder1DayBefore) {
-        const actionText = duty.status === 'PENDING' 
-          ? '⚠️ 【至急】まだ回答されていません！本日中に必ず「承諾」または「不可」の処理をお願いします！' 
-          : '明日の当番のリマインドです。明日はよろしくお願いいたします。';
-        await notifyUser(duty.user.name, `🔔 *鍵開け当番 リマインド (前日)*\n明日（${duty.date}）はあなたの鍵開け当番です。\n\n${actionText}`);
+      // 🟢 ここを差し替えました！3日前と前日で全く同じ処理（メッセージ）を実行します
+      if (todayStr === reminder3DaysBefore || todayStr === reminder1DayBefore) {
+        // 3営業日前、または1営業日前の両方で同じメッセージを送信
+        await notifyUser(
+          duty.user.name, 
+          `${duty.date}が鍵開けの日です。\n承諾も不可も押していない場合は、「承諾」か「不可」を押してください。`
+        );
       }
     }
   } catch (error) {
     console.error('❌ Error in Daily 8AM cron:', error);
   }
 });
-
 // ④ DAILY 1:00 PM: Admin Warning for No Response
 cron.schedule('0 13 * * *', async () => {
   console.log('⏰ Running Daily 1:00 PM Cron: Admin No-Response Alert');
@@ -597,7 +610,8 @@ cron.schedule('0 13 * * *', async () => {
       
       // If today is exactly 1 working day before the duty, and it is STILL pending at 1:00 PM
       if (todayStr === reminder1DayBefore) {
-        await notifyAdmins(`🚨 *管理者アラート：未回答*\n明日（${duty.date}）の当番である *${duty.user.name}* さんが、まだ「承諾」していません！\n至急、本人に確認をとるか手動で調整してください。`);
+        // 🟢 先頭に 🚨 を追加
+        await notifyAdmins(`🚨 ${duty.date}の鍵開け担当者${duty.user.name}さんから返信がありません。`);
       }
     }
   } catch (error) {

@@ -22,7 +22,15 @@ export default function UserDashboard({ currentUser }) {
 
       const todayStr = new Date().toISOString().split('T')[0];
 
-      const myDuties = allData.filter(item => item.assignee === currentUser?.name);
+      // 🟢 自分の当番だけを抽出し、さらに「過去の日付」を除外する
+      const myDuties = allData.filter(item => {
+        const baseDate = item.date.split(' ')[0];
+        return item.assignee === currentUser?.name && baseDate >= todayStr;
+      });
+      
+      // 🟢 日付が近い順（昇順）に並び替える
+      myDuties.sort((a, b) => new Date(a.date.split(' ')[0]) - new Date(b.date.split(' ')[0]));
+      
       setDuties(myDuties);
 
       const accepted = myDuties.filter(d => d.status === 'ACCEPTED').length;
@@ -167,7 +175,7 @@ export default function UserDashboard({ currentUser }) {
     }
 
     return (
-      <div className="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden">
+      <div className="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
         
         {/* Header */}
         <div className="flex justify-center items-center mb-2 shrink-0">
@@ -227,29 +235,14 @@ export default function UserDashboard({ currentUser }) {
         </section>
 
         {/* 2. あなたの担当予定 */}
-        <section className="flex flex-col h-full">
+        <section className="flex flex-col h-full min-h-0">
           <div className="flex items-center justify-between mb-4 h-8 shrink-0">
             <h2 style={jpFont} className="text-sm font-extrabold text-[#B01A24] tracking-wider flex items-center gap-2">
               <KeyRound size={16} /> あなたの担当予定
             </h2>
-            {duties.length > 3 && (
-              <div className="flex items-center gap-2 text-sm font-bold text-[#B01A24] bg-white px-4 py-1 rounded-full shadow-sm border border-slate-200">
-                <button 
-                  onClick={() => setCurrentCardIndex(prev => Math.max(prev - 1, 0))}
-                  disabled={currentCardIndex === 0}
-                  className="hover:text-red-700 disabled:opacity-30 disabled:hover:text-[#B01A24] transition-colors"
-                ><ChevronLeft size={16}/></button>
-                <span className="tracking-widest">{currentCardIndex + 1} / {duties.length}</span>
-                <button 
-                  onClick={() => setCurrentCardIndex(prev => Math.min(prev + 1, duties.length - 1))}
-                  disabled={currentCardIndex === duties.length - 1}
-                  className="hover:text-red-700 disabled:opacity-30 disabled:hover:text-[#B01A24] transition-colors"
-                ><ChevronRight size={16}/></button>
-              </div>
-            )}
           </div>
 
-          <div className="relative flex-grow h-full min-h-0">
+          <div className="relative flex-grow min-h-0">
             {duties.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center h-full flex flex-col items-center justify-center absolute inset-0">
                 <div className="w-12 h-12 lg:w-16 lg:h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -258,10 +251,19 @@ export default function UserDashboard({ currentUser }) {
                 <h3 className="text-slate-500 font-bold mb-1 text-sm lg:text-base">担当予定はありません</h3>
                 <p className="text-slate-400 text-xs lg:text-sm">割り当てをお待ちください。</p>
               </div>
-            ) : duties.length <= 3 ? (
-              <div className="flex flex-col gap-3 lg:gap-4 h-full absolute inset-0">
+            ) : (
+              /* 🟢 FIX 1: absolute inset-0 を使って親枠の中に完全に閉じ込める！ 3枚以上の時だけスクロールバーを出す */
+              <div className={`flex flex-col gap-3 lg:gap-4 absolute inset-0 ${duties.length > 2 ? 'overflow-y-auto custom-scrollbar pr-2 pb-2' : ''}`}>
                 {duties.map((duty) => (
-                  <div key={duty.id} className={`bg-white rounded-2xl shadow-sm border border-slate-200 ${duties.length === 3 ? 'p-3 lg:p-4' : 'p-4 lg:p-5'} flex-1 flex flex-col justify-between relative overflow-hidden`}>
+                  /* 🟢 FIX 2: 条件分岐！ 2枚以下の時はエフェクトあり(hover:...)。3枚以上の時はエフェクトなし。 */
+                  <div 
+                    key={duty.id} 
+                    className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:p-5 flex flex-col justify-between relative overflow-hidden shrink-0 min-h-[155px] ${
+                      duties.length <= 2 
+                        ? 'hover:-translate-y-1 hover:shadow-md hover:border-red-200 transition-all duration-300 flex-1' 
+                        : ''
+                    }`}
+                  >
                     
                     {/* 🔴 CLASSIC MARU (CIRCLE) */}
                     {duty.status === 'ACCEPTED' && (
@@ -281,7 +283,7 @@ export default function UserDashboard({ currentUser }) {
                       </div>
                     )}
 
-                    {/* ⚪ SKIPPED (NOT NEEDED) - ADDED HERE */}
+                    {/* ⚪ SKIPPED (NOT NEEDED) */}
                     {duty.status === 'NOT_NEEDED' && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06] z-0 text-slate-500">
                         <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
@@ -301,9 +303,7 @@ export default function UserDashboard({ currentUser }) {
                     
                     <div className="text-center relative z-10 my-auto">
                       <p className={`font-bold tracking-tight text-[#B01A24] ${
-                        duties.length === 1 ? 'text-4xl lg:text-5xl' : 
-                        duties.length === 2 ? 'text-2xl lg:text-3xl' : 
-                        'text-lg lg:text-xl'
+                        duties.length === 1 ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'
                       }`}>
                         {duty.date}
                       </p>
@@ -330,90 +330,6 @@ export default function UserDashboard({ currentUser }) {
                   </div>
                 ))}
               </div>
-            ) : (
-              <AnimatePresence mode="wait">
-                <motion.div 
-                  key={duties[currentCardIndex].id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8 h-full flex flex-col justify-between absolute inset-0 overflow-hidden"
-                >
-                  <AnimatePresence>
-                    {duties[currentCardIndex].status === 'ACCEPTED' && (
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0, rotate: -20 }}
-                        animate={{ scale: 1, opacity: 0.08, rotate: -10 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 text-[#B01A24] pb-12"
-                      >
-                        <ThumbsUp size={120} strokeWidth={1.5} />
-                      </motion.div>
-                    )}
-                    {duties[currentCardIndex].status === 'REJECTED' && (
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0, rotate: 20 }}
-                        animate={{ scale: 1, opacity: 0.05, rotate: 10 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 text-black pb-12"
-                      >
-                        <ThumbsDown size={120} strokeWidth={1.5} />
-                      </motion.div>
-                    )}
-                    
-                    {/* ⚪ SKIPPED (NOT NEEDED) ANIMATED - ADDED HERE */}
-                    {duties[currentCardIndex].status === 'NOT_NEEDED' && (
-                      <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 0.06 }}
-                        exit={{ scale: 0.5, opacity: 0 }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 text-slate-500 pb-12"
-                      >
-                        <svg viewBox="0 0 100 100" className="w-48 h-48 lg:w-64 lg:h-64">
-                          <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none" />
-                          <line x1="20" y1="80" x2="80" y2="20" stroke="currentColor" strokeWidth="8" />
-                        </svg>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="flex justify-between items-start relative z-10">
-                    <div>
-                      <p className="text-slate-400 text-[10px] lg:text-xs font-bold mb-1">当番スケジュール</p>
-                      <h3 className="text-base lg:text-lg font-bold text-slate-800">本社 鍵開け当番</h3>
-                    </div>
-                    <CalendarDays className="text-slate-300" size={20} />
-                  </div>
-                  
-                  <div className="text-center relative z-10">
-                    <p className="text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-[#B01A24]">
-                      {duties[currentCardIndex].date}
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 lg:gap-4 mt-4 relative z-10">
-                    <button 
-                      onClick={() => handleMyResponse(duties[currentCardIndex].id, 'REJECTED')}
-                      disabled={duties[currentCardIndex].status === 'REJECTED' || duties[currentCardIndex].status === 'NOT_NEEDED'}
-                      className="py-2.5 lg:py-3 rounded-xl font-bold text-xs lg:text-sm bg-black text-white hover:bg-gray-800 transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black flex items-center justify-center gap-1.5"
-                    >
-                      <XCircle size={16} />
-                      {duties[currentCardIndex].status === 'REJECTED' ? '不可登録済' : '不可'}
-                    </button>
-                    <button 
-                      onClick={() => handleMyResponse(duties[currentCardIndex].id, 'ACCEPTED')}
-                      disabled={duties[currentCardIndex].status === 'ACCEPTED' || duties[currentCardIndex].status === 'NOT_NEEDED'}
-                      className="py-2.5 lg:py-3 rounded-xl font-bold text-xs lg:text-sm bg-[#B01A24] text-white hover:bg-red-800 transition-all shadow-md shadow-red-900/20 disabled:opacity-40 disabled:hover:bg-[#B01A24] flex items-center justify-center gap-1.5"
-                    >
-                      <CheckCircle2 size={16} />
-                      {duties[currentCardIndex].status === 'ACCEPTED' ? '承諾済み' : '承諾'}
-                    </button>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
             )}
           </div>
         </section>
@@ -425,7 +341,7 @@ export default function UserDashboard({ currentUser }) {
               <BarChart3 size={16} /> あなたの実績
             </h2>
           </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:p-6 flex flex-col items-center justify-center flex-grow min-h-0">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:p-6 flex flex-col items-center justify-center flex-grow min-h-0 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
             <div className="w-full h-full min-h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
