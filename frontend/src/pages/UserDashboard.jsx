@@ -22,17 +22,37 @@ export default function UserDashboard({ currentUser }) {
 
       const todayStr = new Date().toISOString().split('T')[0];
 
-      // 🟢 自分の当番だけを抽出し、さらに「過去の日付」を除外する
-      const myDuties = allData.filter(item => {
+// 🟢 自分の当番を抽出し、同じ日付の重複データがあれば優先度の高いものを1つだけ残す
+      const myDutiesMap = new Map();
+      
+      allData.forEach(item => {
         const baseDate = item.date.split(' ')[0];
-        return item.assignee === currentUser?.name && baseDate >= todayStr;
+        
+        if (item.assignee === currentUser?.name && baseDate >= todayStr) {
+          if (!myDutiesMap.has(baseDate)) {
+            myDutiesMap.set(baseDate, item);
+          } else {
+            const existing = myDutiesMap.get(baseDate);
+            // ステータスの表示優先度（数字が大きいほど優先して表示する）
+            const statusScore = { 'ACCEPTED': 4, 'PENDING': 3, 'NOT_NEEDED': 2, 'REJECTED': 1 };
+            
+            if (statusScore[item.status] > statusScore[existing.status]) {
+              myDutiesMap.set(baseDate, item);
+            } else if (statusScore[item.status] === statusScore[existing.status] && item.id > existing.id) {
+              // 優先度が同じ場合は、新しく作られたデータ（IDが大きい方）を残す
+              myDutiesMap.set(baseDate, item);
+            }
+          }
+        }
       });
+
+      const myDuties = Array.from(myDutiesMap.values());
       
       // 🟢 日付が近い順（昇順）に並び替える
       myDuties.sort((a, b) => new Date(a.date.split(' ')[0]) - new Date(b.date.split(' ')[0]));
       
       setDuties(myDuties);
-
+      
       const accepted = myDuties.filter(d => d.status === 'ACCEPTED').length;
       const rejected = myDuties.filter(d => d.status === 'REJECTED').length;
       const pending = myDuties.filter(d => d.status === 'PENDING').length;
@@ -285,7 +305,7 @@ export default function UserDashboard({ currentUser }) {
 
                     {/* ⚪ SKIPPED (NOT NEEDED) */}
                     {duty.status === 'NOT_NEEDED' && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06] z-0 text-slate-500">
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.10] z-0 text-slate-500">
                         <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
                           <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none" />
                           <line x1="20" y1="80" x2="80" y2="20" stroke="currentColor" strokeWidth="8" />

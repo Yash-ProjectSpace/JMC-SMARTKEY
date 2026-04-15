@@ -161,7 +161,7 @@ const ProfileModal = ({ isOpen, onClose, currentUser, setUser, onLogout }) => {
               </label>
               <div className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 flex items-center space-x-2 cursor-not-allowed">
                 {currentUser?.role === 'ADMIN' ? <Shield size={16} /> : <User size={16} />}
-                <span className="font-bold">{currentUser?.role === 'ADMIN' ? '管理者' : '一般ユーザー'}</span>
+                <span className="font-bold">{currentUser?.role === 'ADMIN' ? '管理者' : 'ユーザー'}</span>
               </div>
               <p className="text-xs text-slate-400 mt-1.5 ml-1">※権限の変更はシステム管理者にお問い合わせください。</p>
             </div>
@@ -241,7 +241,7 @@ export default function Layout({ currentUser, onLogout, setUser, children }) {
         <div className="flex items-center space-x-4">
           <div className="text-right hidden md:block">
             <p className="text-sm font-bold text-white">{currentUser?.name}</p>
-            <p className="text-xs text-slate-400">{currentUser?.role === 'ADMIN' ? '管理者' : '一般ユーザー'}</p>
+            <p className="text-xs text-slate-400">{currentUser?.role === 'ADMIN' ? '管理者' : 'ユーザー'}</p>
           </div>
           
           <div 
@@ -284,7 +284,7 @@ export default function Layout({ currentUser, onLogout, setUser, children }) {
             </Link>
           ) : (
             <div 
-              className="px-6 py-2 rounded-full text-slate-400 font-semibold text-sm flex items-center space-x-2 cursor-not-allowed opacity-60"
+              className="px-6 py-2 rounded-full text-slate-900 font-semibold text-sm flex items-center space-x-2 cursor-not-allowed opacity-60"
               title="管理者権限が必要です"
             >
                <ShieldAlert size={16} />

@@ -181,7 +181,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#FAF8F5] py-6 px-4 lg:px-8 space-y-8 font-sans">
       {/* SECTION 1: Scalable Horizontal User Stats */}
       <section>
-        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">全メンバーの実績確認 </h3>
+        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">全メンバーの実績確認</h3>
         <div className="flex space-x-4 overflow-x-auto pb-4 custom-scrollbar snap-x pt-2">
           {userStats.length > 0 ? (
             userStats.map((stat, i) => (
@@ -339,8 +339,8 @@ export default function AdminDashboard() {
                           ) : (
                             <button
                               onClick={() => handleProxyAction(row.id, 'NOT_NEEDED')}
-                              disabled={row.status === 'ACCEPTED' || row.status === 'REJECTED'} 
-                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-slate-500 text-white hover:bg-slate-600 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-slate-900/20 disabled:opacity-40 disabled:hover:bg-slate-500 disabled:-translate-y-0 disabled:shadow-md cursor-pointer whitespace-nowrap"
+                              /* 🟢 以前ここにあった disabled=... の行を削除しました。これでいつでも押せます！ */
+                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-slate-500 text-white hover:bg-slate-600 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-slate-900/20 cursor-pointer whitespace-nowrap"
                             >
                               不要
                             </button>

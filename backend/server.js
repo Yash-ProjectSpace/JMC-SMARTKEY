@@ -227,7 +227,24 @@ app.patch('/api/schedule/:id', async (req, res) => {
       if (previousStatus === 'REJECTED') {
         console.log(`[UNDO] 🔙 Clearing auto-generated replacement for ${updatedDuty.date}`);
 
-        // 🟢 FIX: Added the 'startsWith: baseDate' fix here to prevent ghost records!
+        // 🟢 1. レコードを消す前に、代わりの担当者（User B）を見つける
+        const replacementDuty = await prisma.duty.findFirst({
+          where: {
+            date: { startsWith: baseDate },
+            id: { not: parseInt(id) } 
+          },
+          include: { user: true }
+        });
+
+        // 🟢 2. 代わりの担当者がいたら「キャンセルされました」と個人チャットへ通知
+        if (replacementDuty) {
+          await notifyUser(
+            replacementDuty.user.name, 
+            `🔄 *担当取消のお知らせ*\n${updatedDuty.user.name}さんが「不可」を取り消して当番を承諾したため、あなたの ${updatedDuty.date} の鍵開け当番はキャンセルされました。`
+          );
+        }
+
+        // 🟢 3. 代わりの人の当番データをデータベースから削除
         await prisma.duty.deleteMany({
           where: {
             date: { startsWith: baseDate },
@@ -235,9 +252,12 @@ app.patch('/api/schedule/:id', async (req, res) => {
           }
         });
         
-        await notifyAllUsers(`🔙 *取消通知*\n*${updatedDuty.user.name}* さんが ${updatedDuty.date} の「不可」を取り消し、鍵当番を承諾しました！`);
+        // 🟢 4. 管理者へ報告（すべて完了したことを伝える）
+        await notifyAdmins(`🔙 *取消通知*\n*${updatedDuty.user.name}* さんが ${updatedDuty.date} の「不可」を取り消し、鍵当番を再承諾しました。代替の担当者は自動でキャンセルされました。`);
+      
       } else if (previousStatus !== 'ACCEPTED') {
-        await notifyAllUsers(`✅ *承諾通知*\n*${updatedDuty.user.name}* さんが ${updatedDuty.date} の鍵当番を承諾しました！`);
+        // 通常の承諾の場合（管理者のみに通知）
+        console.log(`[ACTION] ${updatedDuty.user.name} accepted ${updatedDuty.date}. (No admin ping needed)`);
       }
     }
     // ==========================================
@@ -266,8 +286,6 @@ app.patch('/api/schedule/:id', async (req, res) => {
     else if (status === 'REJECTED' && previousStatus !== 'REJECTED') {
       console.log(`[SMART-REASSIGN] 🧠 Starting reassignment logic...`);
       const targetDateStr = updatedDuty.date;
-
-      await notifyAdmins(`❌ *Rejection Notice*\n*${updatedDuty.user.name}* has declined the key duty for ${targetDateStr}. Searching for a new assignee...`);
 
       // Find ALL previous rejections for this exact date to build the Blacklist
       const rejectedDuties = await prisma.duty.findMany({
