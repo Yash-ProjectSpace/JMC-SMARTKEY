@@ -13,7 +13,7 @@ export default function UserDashboard({ currentUser }) {
 
   const jpFont = { fontFamily: '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif' };
 
-  const fetchData = async () => {
+const fetchData = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/schedule');
       const allData = await res.json();
@@ -22,13 +22,26 @@ export default function UserDashboard({ currentUser }) {
 
       const todayStr = new Date().toISOString().split('T')[0];
 
-// 🟢 自分の当番を抽出し、同じ日付の重複データがあれば優先度の高いものを1つだけ残す
+      // 🟢 1. 【追加】誰かがすでに「承諾(ACCEPTED)」している日付のリストを作る
+      const acceptedDatesByAnyone = new Set(
+        allData
+          .filter(item => item.status === 'ACCEPTED')
+          .map(item => item.date.split(' ')[0])
+      );
+
+      // 🟢 自分の当番を抽出し、同じ日付の重複データがあれば優先度の高いものを1つだけ残す
       const myDutiesMap = new Map();
       
       allData.forEach(item => {
         const baseDate = item.date.split(' ')[0];
         
         if (item.assignee === currentUser?.name && baseDate >= todayStr) {
+          
+          // 🛑 2. 【追加】自分が「不可(REJECTED)」にしていて、かつ他の誰かがすでに「承諾」しているなら、このカードは非表示にする
+          if (item.status === 'REJECTED' && acceptedDatesByAnyone.has(baseDate)) {
+            return; // myDutiesMap に追加せずにスキップ（画面から消える）
+          }
+
           if (!myDutiesMap.has(baseDate)) {
             myDutiesMap.set(baseDate, item);
           } else {
@@ -82,6 +95,7 @@ export default function UserDashboard({ currentUser }) {
             groupedObj[baseDate].history.push(previousAssignee);
           }
           groupedObj[baseDate].id = duty.id;
+          // ※ここは全体のスケジュール用の処理なので、このままでOKです
           groupedObj[baseDate].assignee = duty.assignee;
           groupedObj[baseDate].status = duty.status;
         }
@@ -96,7 +110,6 @@ export default function UserDashboard({ currentUser }) {
       console.error("Failed to fetch schedule:", error);
     }
   };
-
   useEffect(() => {
     fetchData();
   }, [currentUser?.name]);

@@ -225,6 +225,23 @@ app.patch('/api/schedule/:id', async (req, res) => {
     // ==========================================
     if (status === 'ACCEPTED') {
       if (previousStatus === 'REJECTED') {
+
+        // 🛑 0. 【新規追加】すでに代わりの人が承諾(ACCEPTED)していないかチェック（防衛ライン）
+        const alreadyAcceptedBySomeoneElse = await prisma.duty.findFirst({
+          where: {
+            date: { startsWith: baseDate },
+            status: 'ACCEPTED',
+            id: { not: parseInt(id) } // 自分以外のデータ
+          }
+        });
+
+        if (alreadyAcceptedBySomeoneElse) {
+          console.log(`[BLOCK] 🚫 ${updatedDuty.user.name} tried to undo, but replacement already accepted.`);
+          // 代わりの人がすでに承諾済みなら、403エラーを返してデータベースの変更をブロックする
+          return res.status(403).json({ error: "すでに代わりの担当者がこの日程を承諾したため、取り消すことはできません。" });
+        }
+
+        // --- (ここからは既存のコードと同じです) ---
         console.log(`[UNDO] 🔙 Clearing auto-generated replacement for ${updatedDuty.date}`);
 
         // 🟢 1. レコードを消す前に、代わりの担当者（User B）を見つける
@@ -277,6 +294,20 @@ app.patch('/api/schedule/:id', async (req, res) => {
       // Send a notification to the chat
       // 🟢 全員通知を廃止し、担当者本人のみに指定のメッセージを送信
       await notifyUser(updatedDuty.user.name, `🛑${updatedDuty.date}は祝日または休業のため、鍵開け当番は不要です。`);
+      
+      return res.json(updatedDuty);
+    }
+    // ==========================================
+    // 🔄 UNDO CANCELLATION: Admin changes NOT_NEEDED -> PENDING
+    // ==========================================
+    else if (status === 'PENDING' && previousStatus === 'NOT_NEEDED') {
+      console.log(`[RESTORE] 🔄 Admin restored duty for ${updatedDuty.date}. (No admin ping needed)`);
+      
+      // 🟢 担当者本人（1名）にのみ復活の通知を送る
+      await notifyUser(
+        updatedDuty.user.name,
+        `🔄 *当番復活のお知らせ*\n管理者の操作により、キャンセルされていた ${updatedDuty.date} の鍵開け当番が「未回答」の状態に戻りました。お手数ですが、再度「承諾」または「不可」の回答をお願いいたします。`
+      );
       
       return res.json(updatedDuty);
     }
@@ -472,52 +503,69 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ==========================================
-// ⏰ 7. CRON JOB: AUTOPILOT
-// ==========================================
-// Runs every Friday (5) at 08:00 AM. Assigns for the week *after* next.
-cron.schedule('0 8 * * 5', async () => {
-  console.log("⏰ [CRON] Starting Friday 8:00 AM Automated Assignment...");
+// ① FRIDAY 8:30 AM: Generate AND Send 2-week schedule to ALL users
+cron.schedule('30 8 * * 5', async () => {
+  console.log('⏰ Running Friday 8:30 AM Cron: Weekly Schedule Generation & Announcement');
 
   try {
-    const today = new Date();
+    // 1. Fetch holidays
+    const publicHolidays = await getHolidays(); 
     
-    // Jump to the Monday of the *week after next* (+10 days from Friday)
-    let targetDate = new Date(today);
-    targetDate.setDate(targetDate.getDate() + 10);
+    // 2. Start from Monday of the week after next (+10 days from today, Friday)
+    const today = new Date();
+    let currentDate = new Date(today);
+    currentDate.setDate(currentDate.getDate() + 10);
 
     const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
     let generatedCount = 0;
+    let addedDays = 0;
 
-    // Generate Mon-Fri (5 days)
-    for (let i = 0; i < 5; i++) {
-      const yyyy = targetDate.getFullYear();
-      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const dd = String(targetDate.getDate()).padStart(2, '0');
-      const formattedDate = `${yyyy}-${mm}-${dd} (${daysOfWeek[targetDate.getDay()]})`;
+    // 3. Generate 10 working days (2 weeks)
+    while (addedDays < 10) {
+      const yyyy = currentDate.getFullYear();
+      const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(currentDate.getDate()).padStart(2, '0');
+      const checkDateStr = `${yyyy}-${mm}-${dd}`;
+      
+      const dayOfWeek = currentDate.getDay();
+      const isPublicHoliday = publicHolidays[checkDateStr] !== undefined;
 
-      const bestCandidate = await findBestCandidate(formattedDate, []);
-
-      if (bestCandidate) {
-        await prisma.duty.create({
-          data: {
-            date: formattedDate,
-            status: 'PENDING',
-            userId: bestCandidate.id
+      // Only assign if NOT Weekend AND NOT Holiday
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isPublicHoliday) {
+        const formattedDate = `${checkDateStr} (${daysOfWeek[dayOfWeek]})`;
+        
+        // Prevent duplicates just in case
+        const existing = await prisma.duty.findFirst({ where: { date: { startsWith: checkDateStr } } });
+        
+        if (!existing) {
+          const bestCandidate = await findBestCandidate(formattedDate, []);
+          if (bestCandidate) {
+            await prisma.duty.create({
+              data: {
+                date: formattedDate,
+                status: 'PENDING',
+                userId: bestCandidate.id
+              }
+            });
+            generatedCount++;
           }
-        });
-        generatedCount++;
-        console.log(`[CRON] 📅 Assigned ${formattedDate} to ${bestCandidate.name}`);
+        }
+        addedDays++; 
       }
-      targetDate.setDate(targetDate.getDate() + 1);
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
+    console.log(`✅ Schedule successfully generated in the database. (${generatedCount} days added)`);
+
+    // 4. Send the Notification IF days were actually added
     if (generatedCount > 0) {
-      await sendGoogleChatMessage(`⏰ *定期スケジュール生成*\n再来週の鍵当番スケジュールが自動生成されました！各自ダッシュボードから確認をお願いします。`);
+      const msg = "来週および再来週の鍵開けスケジュールをお知らせします。割り当てられた日程をご確認のうえ、「承諾」または「不可」を選択してください。";
+      await notifyAllUsers(msg);
+      console.log('✅ Notification sent to all users.');
     }
 
   } catch (error) {
-    console.error("❌ [CRON] Failed during automated assignment:", error);
+    console.error('❌ Error in Friday cron:', error);
   }
 }, {
   scheduled: true,
@@ -557,60 +605,48 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // ==========================================
-// ⏰ AUTOMATED CRON JOBS (Scheduling System)
+// ⏰ AUTOMATED CRON JOBS (Daily Reminders & Alerts)
 // ==========================================
 
-// ① FRIDAY 8:00 AM: Send 2-week schedule to ALL users
-// ① FRIDAY 8:00 AM: Send 2-week schedule to ALL users
-
-cron.schedule('1 8 * * 5', async () => {
-
-  console.log('⏰ Running Friday 8:01 AM Cron: Weekly Schedule Announcement');
-
+// ② DAILY 10:00 AM: Individual Reminders (3 working days & 1 working day before)
+cron.schedule('0 10 * * *', async () => {
+  console.log('⏰ Running Daily 10:00 AM Cron: Individual Reminders');
   try {
-
-    const msg = "来週および再来週の鍵開けスケジュールをお知らせします。割り当てられた日程をご確認のうえ、「承諾」または「不可」を選択してください。";
-
-    await notifyAllUsers(msg);
-
-  } catch (error) {
-
-    console.error('❌ Error in Friday cron:', error);
-
-  }
-
-});
-// ② DAILY 8:00 AM: Individual Reminders (3 days before & 1 day before)
-cron.schedule('0 8 * * *', async () => {
-  console.log('⏰ Running Daily 8:00 AM Cron: Individual Reminders');
-  try {
-    // Note: We use today's date in YYYY-MM-DD format based on local server time
     const todayStr = new Date().toLocaleDateString('en-CA'); 
     
-    // Find all future duties that haven't been rejected
     const upcomingDuties = await prisma.duty.findMany({
       where: { date: { gt: todayStr }, status: { not: 'REJECTED' } },
       include: { user: true }
     });
 
     for (const duty of upcomingDuties) {
-      // Calculate exactly 3 working days before and 1 working day before
+      // SMART LOGIC: Accounts for weekends and holidays
       const reminder3DaysBefore = await getTargetWorkingDateBefore(duty.date, 3);
       const reminder1DayBefore = await getTargetWorkingDateBefore(duty.date, 1);
 
-      // 🟢 ここを差し替えました！3日前と前日で全く同じ処理（メッセージ）を実行します
-      if (todayStr === reminder3DaysBefore || todayStr === reminder1DayBefore) {
-        // 3営業日前、または1営業日前の両方で同じメッセージを送信
+      // 1-Day Reminder Message
+      if (todayStr === reminder1DayBefore) {
         await notifyUser(
           duty.user.name, 
-          `${duty.date}が鍵開けの日です。\n承諾も不可も押していない場合は、「承諾」か「不可」を押してください。`
+          `⏰ *【リマインダー】明日の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番です！朝10:00の通知をお届けしています。朝のご対応よろしくお願いいたします。`
         );
+        console.log(`[REMINDER] Sent 1-working-day reminder to ${duty.user.name} for ${duty.date}`);
+      }
+
+      // 3-Day Reminder Message
+      if (todayStr === reminder3DaysBefore) {
+        await notifyUser(
+          duty.user.name, 
+          `📅 *【事前確認】3営業日後の鍵開け当番*\n3営業日後の ${duty.date} はあなたの鍵開け当番として予定されています。まだ「承諾」を押していない場合はダッシュボードから確認をお願いします。`
+        );
+        console.log(`[REMINDER] Sent 3-working-day reminder to ${duty.user.name} for ${duty.date}`);
       }
     }
   } catch (error) {
-    console.error('❌ Error in Daily 8AM cron:', error);
+    console.error('❌ Error in Daily 10AM cron:', error);
   }
 });
+
 // ④ DAILY 1:00 PM: Admin Warning for No Response
 cron.schedule('0 13 * * *', async () => {
   console.log('⏰ Running Daily 1:00 PM Cron: Admin No-Response Alert');
@@ -628,8 +664,7 @@ cron.schedule('0 13 * * *', async () => {
       
       // If today is exactly 1 working day before the duty, and it is STILL pending at 1:00 PM
       if (todayStr === reminder1DayBefore) {
-        // 🟢 先頭に 🚨 を追加
-        await notifyAdmins(`🚨 ${duty.date}の鍵開け担当者${duty.user.name}さんから返信がありません。`);
+        await notifyAdmins(`🚨 *警告*：${duty.date}の鍵開け担当者 *${duty.user.name}* さんからまだ返信（承諾/不可）がありません！至急確認してください。`);
       }
     }
   } catch (error) {
