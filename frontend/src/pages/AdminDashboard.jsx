@@ -176,7 +176,14 @@ export default function AdminDashboard() {
     if (status === 'NOT_NEEDED') return 'bg-slate-50 opacity-60 hover:bg-slate-100/60';
     return 'hover:bg-slate-50'; 
   };
-
+  // 🛑 FIX 1: 【ここに追加】前日13時を過ぎているか判定する関数
+  const isPastDeadline = (dutyDateString) => {
+    if (!dutyDateString) return false;
+    const baseDateStr = dutyDateString.split(' ')[0]; 
+    const deadline = new Date(`${baseDateStr}T13:00:00+09:00`); 
+    deadline.setDate(deadline.getDate() - 1); 
+    return new Date() > deadline; 
+  };
   return (
     <div className="min-h-screen bg-[#FAF8F5] py-6 px-4 lg:px-8 space-y-8 font-sans">
       {/* SECTION 1: Scalable Horizontal User Stats */}
@@ -310,23 +317,25 @@ export default function AdminDashboard() {
                         {/* 🟢 justify-end を justify-start に変更して、ボタンも左寄せにする */}
                         <div className="flex items-center justify-start gap-2 flex-nowrap">
                           
-                          {/* 🟢 承諾 (アイコンなし) */}
-                          <button 
-                            onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
-                            disabled={row.status === 'ACCEPTED'} 
-                            className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-[#B01A24] text-white hover:bg-red-800 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-red-900/20 disabled:opacity-40 disabled:hover:bg-[#B01A24] disabled:-translate-y-0 disabled:shadow-md disabled:cursor-not-allowed whitespace-nowrap"
-                          >
-                            {row.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
-                          </button>
-                          
                           {/* 🟢 不可 (アイコンなし) */}
                           <button 
                             onClick={() => handleProxyAction(row.id, 'REJECTED')} 
-                            disabled={row.status === 'REJECTED'} 
+                            // 🛑 FIX 2: 【変更】isPastDeadline(row.date) を追加
+                            disabled={row.status === 'REJECTED' || isPastDeadline(row.date)} 
                             className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-black text-white hover:bg-gray-800 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black disabled:-translate-y-0 disabled:shadow-md disabled:cursor-not-allowed whitespace-nowrap"
                           >
-                            {row.status === 'REJECTED' ? '不可登録済' : '不可'}
+                            {/* 🛑 FIX 2: 【変更】期限切れの場合はテキストを変える */}
+                            {row.status === 'REJECTED' ? '不可登録済' : isPastDeadline(row.date) ? '期限切れ' : '不可'}
                           </button>
+                          
+                          {/* 🟢 承諾ボタン（赤色） */}
+                            <button 
+                              onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
+                              disabled={row.status === 'ACCEPTED'} 
+                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-[#B01A24] text-white hover:bg-red-800 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-red-900/20 disabled:opacity-40 disabled:hover:bg-[#B01A24] disabled:-translate-y-0 disabled:shadow-md disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                              {row.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
+                            </button>
                           
                           {/* 🟢 不要 / 元に戻す (アイコンなし) */}
                           {row.status === 'NOT_NEEDED' ? (

@@ -62,8 +62,10 @@ export default function Login({ onGoogleSuccess, onManualLogin, loginError }) {
               />
             </div>
 
-            {/* テスト用手動ログインフォーム */}
-            <div className="relative flex py-4 items-center mb-4">
+            {/* ==============================================
+                🛠️ テスト用手動ログインフォーム（本番ではコメントアウト）
+                ============================================== */}
+            {/* <div className="relative flex py-4 items-center mb-4">
               <div className="flex-grow border-t border-stone-200"></div>
               <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold tracking-wider">テスト用ログイン</span>
               <div className="flex-grow border-t border-stone-200"></div>
@@ -84,6 +86,8 @@ export default function Login({ onGoogleSuccess, onManualLogin, loginError }) {
                 手動でログイン
               </button>
             </form>
+            */}
+            {/* ============================================== */}
 
             {loginError && (
               <div className="mt-6 p-4 bg-red-50 rounded-xl border border-red-100">

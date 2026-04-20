@@ -124,7 +124,15 @@ const fetchData = async () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-
+      // 🛑 バックエンドからのブロック（13時以降の遅延クリック）を検知
+      if (!response.ok) {
+        if (response.status === 403) {
+          // ご希望のメッセージをアラートで表示
+          alert("⚠️ エラー\n既に前日の13時を過ぎているため「不可」を選択できません。スケジュールの変更については管理者にご連絡ください。");
+          fetchData(); // 画面を元の正しい状態（REJECTEDになっていない状態）に戻す
+          return;
+        }
+      }
       if (response.ok) {
         setTimeout(() => {
           fetchData();
@@ -134,6 +142,14 @@ const fetchData = async () => {
       console.error("Update failed:", error);
       fetchData();
     }
+  };
+  // 🛑 FIX 1: 【ここに追加】前日13時を過ぎているか判定する関数
+  const isPastDeadline = (dutyDateString) => {
+    if (!dutyDateString) return false;
+    const baseDateStr = dutyDateString.split(' ')[0]; 
+    const deadline = new Date(`${baseDateStr}T13:00:00+09:00`); 
+    deadline.setDate(deadline.getDate() - 1); 
+    return new Date() > deadline; 
   };
 
   const chartData = useMemo(() => [
@@ -345,13 +361,15 @@ const fetchData = async () => {
                     <div className="grid grid-cols-2 gap-2 lg:gap-3 relative z-10 mt-2">
                       <button 
                         onClick={() => handleMyResponse(duty.id, 'REJECTED')}
-                        disabled={duty.status === 'REJECTED' || duty.status === 'NOT_NEEDED'}
+                        // 🛑 FIX 3: 【変更】isPastDeadline(duty.date) を追加
+                        disabled={duty.status === 'REJECTED' || duty.status === 'NOT_NEEDED' || isPastDeadline(duty.date)}
                         className="py-1.5 lg:py-2 rounded-lg font-bold text-xs bg-black text-white hover:bg-gray-800 transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black flex items-center justify-center gap-1.5"
                       >
                         <XCircle size={14} />
-                        {duty.status === 'REJECTED' ? '不可登録済' : '不可'}
+                        {/* 🛑 FIX 3: 【変更】13時を過ぎていたら「期限切れ」と表示させる */}
+                        {duty.status === 'REJECTED' ? '不可登録済' : isPastDeadline(duty.date) ? '13時期限切れ' : '不可'}
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleMyResponse(duty.id, 'ACCEPTED')}
                         disabled={duty.status === 'ACCEPTED' || duty.status === 'NOT_NEEDED'}
                         className="py-1.5 lg:py-2 rounded-lg font-bold text-xs bg-[#B01A24] text-white hover:bg-red-800 transition-all shadow-md shadow-red-900/20 disabled:opacity-40 disabled:hover:bg-[#B01A24] flex items-center justify-center gap-1.5"

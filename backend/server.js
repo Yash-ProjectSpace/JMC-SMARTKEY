@@ -21,15 +21,12 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const USER_DIRECTORY = {
   // 👑 管理者 (ADMIN)
   "ヤシュワン": { url: process.env.WEBHOOK_YASWANTH, role: "ADMIN" },
-  "Sharath": { url: process.env.WEBHOOK_SHARATH, role: "ADMIN" },
   "内木 敦": { url: process.env.WEBHOOK_UCHIKI_SAN, role: "ADMIN" },
   "藤原 志帆": { url: process.env.WEBHOOK_FUJIWARA_SAN, role: "ADMIN" },
+  "廣瀬 昌美": { url: process.env.WEBHOOK_HIROSE_SAN, role: "ADMIN" },
 
   // 👤 一般ユーザー (USER)
-  "Om": { url: process.env.WEBHOOK_OM, role: "USER" },
-  "HRIDAY": { url: process.env.WEBHOOK_HRIDAY, role: "USER" },
-  "test1": { url: process.env.WEBHOOK_TEST1, role: "USER" },
-  "test2": { url: process.env.WEBHOOK_TEST2, role: "USER" }
+  //"Om": { url: process.env.WEBHOOK_OM, role: "USER" },
 };
 
 // ==========================================
@@ -38,10 +35,16 @@ const USER_DIRECTORY = {
 async function sendWebhook(url, messageText) {
   if (!url) return;
   try {
+    // 🟢 追加: メッセージの最後にアプリのURLを自動で追加する
+    const appUrl = process.env.APP_URL;
+    const finalMessage = appUrl 
+      ? `${messageText}\n\n🔗 アプリを開く: ${appUrl}` 
+      : messageText;
+
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify({ text: messageText }),
+      body: JSON.stringify({ text: finalMessage }),
     });
   } catch (error) {
     console.error("❌ 通知の送信に失敗しました:", error);
@@ -88,8 +91,8 @@ async function findBestCandidate(targetDateStr, blacklistedUserIds = []) {
   const eligibleUsers = await prisma.user.findMany({
     where: {
       NOT: [
-        { name: '内木 敦' },
-        { name: '藤原 志帆' },
+        //{ name: '内木 敦' },
+        //{ name: '藤原 志帆' },
         { id: { in: blacklistedUserIds } }
       ]
     }
@@ -311,12 +314,33 @@ app.patch('/api/schedule/:id', async (req, res) => {
       
       return res.json(updatedDuty);
     }
-    // ==========================================
+// ==========================================
     // 🧠 REASSIGNMENT LOGIC (Score System)
     // ==========================================
     else if (status === 'REJECTED' && previousStatus !== 'REJECTED') {
       console.log(`[SMART-REASSIGN] 🧠 Starting reassignment logic...`);
       const targetDateStr = updatedDuty.date;
+
+      // 🛑【新規追加】前日13時を過ぎていないかチェックする防衛ライン
+      const baseDateStr = targetDateStr.split(' ')[0]; // 例: "2024-05-20"
+      const deadline = new Date(`${baseDateStr}T13:00:00+09:00`); // 当番日の13時（日本時間）に設定
+      deadline.setDate(deadline.getDate() - 1); // 1日引いて「前日の13時」にする
+
+      const now = new Date(); // 現在のサーバー時刻
+      
+      if (now > deadline) {
+        console.log(`[BLOCK] 🚫 ${updatedDuty.user.name} tried to reject, but it is past the 13:00 deadline.`);
+        
+        // 【超重要】すでに 'REJECTED' に更新されてしまったDBを元の状態に戻す（Revert）
+        await prisma.duty.update({
+          where: { id: parseInt(id) },
+          data: { status: previousStatus }
+        });
+
+        // 403エラーを返して処理を終了する
+        return res.status(403).json({ error: "前日の13時を過ぎているため、「不可」を選択することはできません。管理者に直接ご連絡ください。" });
+      }
+      // 🛑 追加ここまで
 
       // Find ALL previous rejections for this exact date to build the Blacklist
       const rejectedDuties = await prisma.duty.findMany({
@@ -457,7 +481,7 @@ app.post('/api/schedule/generate', async (req, res) => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    await notifyAllUsers(`📅 *スケジュール生成完了*\n祝日を除外して2週間分の鍵当番が生成されました。各自ダッシュボードから確認をお願いします。`);
+    await notifyAllUsers(`🗓️ *スケジュール生成完了*\n祝日を除外して2週間分の鍵当番が生成されました。各自ダッシュボードから確認をお願いします。`);
     res.status(201).json({ message: "Generated successfully!", count: generatedCount });
   } catch (error) {
     console.error("Error generating schedule:", error);
@@ -637,7 +661,7 @@ cron.schedule('0 10 * * *', async () => {
       if (todayStr === reminder3DaysBefore) {
         await notifyUser(
           duty.user.name, 
-          `📅 *【事前確認】3営業日後の鍵開け当番*\n3営業日後の ${duty.date} はあなたの鍵開け当番として予定されています。まだ「承諾」を押していない場合はダッシュボードから確認をお願いします。`
+          `🗓️ *【事前確認】3営業日後の鍵開け当番*\n3営業日後の ${duty.date} はあなたの鍵開け当番として予定されています。まだ「承諾」を押していない場合はダッシュボードから確認をお願いします。`
         );
         console.log(`[REMINDER] Sent 3-working-day reminder to ${duty.user.name} for ${duty.date}`);
       }
