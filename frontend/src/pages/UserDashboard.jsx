@@ -283,7 +283,7 @@ const fetchData = async () => {
           </div>
         </section>
 
-        {/* 2. あなたの担当予定 */}
+{/* 2. あなたの担当予定 */}
         <section className="flex flex-col h-[380px] lg:h-full min-h-0">
           <div className="flex items-center justify-between mb-4 h-8 shrink-0">
             <h2 style={jpFont} className="text-sm font-extrabold text-[#B01A24] tracking-wider flex items-center gap-2">
@@ -301,86 +301,97 @@ const fetchData = async () => {
                 <p className="text-slate-400 text-xs lg:text-sm">割り当てをお待ちください。</p>
               </div>
             ) : (
-              /* 🟢 FIX 1: absolute inset-0 を使って親枠の中に完全に閉じ込める！ 3枚以上の時だけスクロールバーを出す */
-             <div className={`flex flex-col gap-3 lg:gap-4 absolute inset-0 ${duties.length > 2 ? 'overflow-y-auto custom-scrollbar pr-2 pb-2' : ''}`}>
-                {duties.map((duty) => (
-                  /* 🟢 FIX 2: 条件分岐！ 2枚以下の時はエフェクトあり(hover:...)。3枚以上の時はエフェクトなし。 */
-                  <div 
-                    key={duty.id} 
-                    className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:p-5 flex flex-col justify-between relative overflow-hidden shrink-0 min-h-[155px] ${
-                      duties.length <= 2 
-                        ? 'hover:-translate-y-1 hover:shadow-md hover:border-red-200 transition-all duration-300 flex-1' 
-                        : ''
-                    }`}
-                  >
-                    
-                    {/* 🔴 CLASSIC MARU (CIRCLE) */}
-                    {duty.status === 'ACCEPTED' && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0 text-[#B01A24]">
-                        <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
-                          <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="12" fill="none" />
-                        </svg>
-                      </div>
-                    )}
+              <>
+                {/* 🟢 FIX 1: absolute inset-0 を使って親枠の中に完全に閉じ込める！ 3枚以上の時だけスクロールバーを出す */}
+                <div className={`flex flex-col gap-3 lg:gap-4 absolute inset-0 ${duties.length > 2 ? 'overflow-y-auto custom-scrollbar pr-2 pb-10' : ''}`}>
+                  {duties.map((duty) => (
+                    /* 🟢 FIX 2: 条件分岐！ 2枚以下の時はエフェクトあり(hover:...)。3枚以上の時はエフェクトなし。 */
+                    <div 
+                      key={duty.id} 
+                      className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-4 lg:p-5 flex flex-col justify-between relative overflow-hidden shrink-0 min-h-[155px] ${
+                        duties.length <= 2 
+                          ? 'hover:-translate-y-1 hover:shadow-md hover:border-red-200 transition-all duration-300 flex-1' 
+                          : ''
+                      }`}
+                    >
+                      
+                      {/* 🔴 CLASSIC MARU (CIRCLE) */}
+                      {duty.status === 'ACCEPTED' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0 text-[#B01A24]">
+                          <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
+                            <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="12" fill="none" />
+                          </svg>
+                        </div>
+                      )}
 
-                    {/* ⚫ CLASSIC BATSU (X) */}
-                    {duty.status === 'REJECTED' && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06] z-0 text-black">
-                        <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
-                          <path d="M25,25 L75,75 M75,25 L25,75" stroke="currentColor" strokeWidth="14" strokeLinecap="round" fill="none" />
-                        </svg>
-                      </div>
-                    )}
+                      {/* ⚫ CLASSIC BATSU (X) */}
+                      {duty.status === 'REJECTED' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06] z-0 text-black">
+                          <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
+                            <path d="M25,25 L75,75 M75,25 L25,75" stroke="currentColor" strokeWidth="14" strokeLinecap="round" fill="none" />
+                          </svg>
+                        </div>
+                      )}
 
-                    {/* ⚪ SKIPPED (NOT NEEDED) */}
-                    {duty.status === 'NOT_NEEDED' && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.10] z-0 text-slate-500">
-                        <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
-                          <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none" />
-                          <line x1="20" y1="80" x2="80" y2="20" stroke="currentColor" strokeWidth="8" />
-                        </svg>
-                      </div>
-                    )}
+                      {/* ⚪ SKIPPED (NOT NEEDED) */}
+                      {duty.status === 'NOT_NEEDED' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.10] z-0 text-slate-500">
+                          <svg viewBox="0 0 100 100" className="w-32 h-32 lg:w-40 lg:h-40">
+                            <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none" />
+                            <line x1="20" y1="80" x2="80" y2="20" stroke="currentColor" strokeWidth="8" />
+                          </svg>
+                        </div>
+                      )}
 
-                    <div className="flex justify-between items-start relative z-10">
-                      <div>
-                        <p className="text-slate-400 text-[10px] lg:text-xs font-bold mb-0.5">当番スケジュール</p>
-                        <h3 className="text-sm lg:text-base font-bold text-slate-800">本社 鍵開け当番</h3>
+                      <div className="flex justify-between items-start relative z-10">
+                        <div>
+                          <p className="text-slate-400 text-[10px] lg:text-xs font-bold mb-0.5">当番スケジュール</p>
+                          <h3 className="text-sm lg:text-base font-bold text-slate-800">本社 鍵開け当番</h3>
+                        </div>
+                        <CalendarDays className="text-slate-300" size={18} />
                       </div>
-                      <CalendarDays className="text-slate-300" size={18} />
+                      
+                      <div className="text-center relative z-10 my-auto">
+                        <p className={`font-bold tracking-tight text-[#B01A24] ${
+                          duties.length === 1 ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'
+                        }`}>
+                          {duty.date}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 lg:gap-3 relative z-10 mt-2">
+                        <button 
+                          onClick={() => handleMyResponse(duty.id, 'REJECTED')}
+                          // 🛑 FIX 3: 【変更】isPastDeadline(duty.date) を追加
+                          disabled={duty.status === 'REJECTED' || duty.status === 'NOT_NEEDED' || isPastDeadline(duty.date)}
+                          className="py-1.5 lg:py-2 rounded-lg font-bold text-xs bg-black text-white hover:bg-gray-800 transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black flex items-center justify-center gap-1.5"
+                        >
+                          <XCircle size={14} />
+                          {/* 🛑 FIX 3: 【変更】13時を過ぎていたら「期限切れ」と表示させる */}
+                          {duty.status === 'REJECTED' ? '不可登録済' : isPastDeadline(duty.date) ? '13時期限切れ' : '不可'}
+                        </button>
+                        <button
+                          onClick={() => handleMyResponse(duty.id, 'ACCEPTED')}
+                          disabled={duty.status === 'ACCEPTED' || duty.status === 'NOT_NEEDED'}
+                          className="py-1.5 lg:py-2 rounded-lg font-bold text-xs bg-[#B01A24] text-white hover:bg-red-800 transition-all shadow-md shadow-red-900/20 disabled:opacity-40 disabled:hover:bg-[#B01A24] flex items-center justify-center gap-1.5"
+                        >
+                          <CheckCircle2 size={14} />
+                          {duty.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div className="text-center relative z-10 my-auto">
-                      <p className={`font-bold tracking-tight text-[#B01A24] ${
-                        duties.length === 1 ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'
-                      }`}>
-                        {duty.date}
-                      </p>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2 lg:gap-3 relative z-10 mt-2">
-                      <button 
-                        onClick={() => handleMyResponse(duty.id, 'REJECTED')}
-                        // 🛑 FIX 3: 【変更】isPastDeadline(duty.date) を追加
-                        disabled={duty.status === 'REJECTED' || duty.status === 'NOT_NEEDED' || isPastDeadline(duty.date)}
-                        className="py-1.5 lg:py-2 rounded-lg font-bold text-xs bg-black text-white hover:bg-gray-800 transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black flex items-center justify-center gap-1.5"
-                      >
-                        <XCircle size={14} />
-                        {/* 🛑 FIX 3: 【変更】13時を過ぎていたら「期限切れ」と表示させる */}
-                        {duty.status === 'REJECTED' ? '不可登録済' : isPastDeadline(duty.date) ? '13時期限切れ' : '不可'}
-                      </button>
-                      <button
-                        onClick={() => handleMyResponse(duty.id, 'ACCEPTED')}
-                        disabled={duty.status === 'ACCEPTED' || duty.status === 'NOT_NEEDED'}
-                        className="py-1.5 lg:py-2 rounded-lg font-bold text-xs bg-[#B01A24] text-white hover:bg-red-800 transition-all shadow-md shadow-red-900/20 disabled:opacity-40 disabled:hover:bg-[#B01A24] flex items-center justify-center gap-1.5"
-                      >
-                        <CheckCircle2 size={14} />
-                        {duty.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
-                      </button>
-                    </div>
+                  ))}
+                </div>
+
+                {/* 🟢 NEW: Mobile Scroll Indicator (Only shows on phones, only if > 2 duties) */}
+                {duties.length > 2 && (
+                  <div className="absolute bottom-0 left-0 right-2 h-12 bg-gradient-to-t from-[#FAF8F5] via-[#FAF8F5]/80 to-transparent pointer-events-none z-20 flex items-end justify-center pb-1 lg:hidden">
+                    <span className="text-[10px] font-bold text-slate-500 bg-white/90 px-3 py-1 rounded-full shadow-sm border border-slate-200 animate-bounce">
+                      ↓ 下にスクロール
+                    </span>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </section>

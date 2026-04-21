@@ -276,7 +276,7 @@ app.patch('/api/schedule/:id', async (req, res) => {
         });
         
         // 🟢 4. 管理者へ報告（すべて完了したことを伝える）
-        await notifyAdmins(`🔙 *取消通知*\n*${updatedDuty.user.name}* さんが ${updatedDuty.date} の「不可」を取り消し、鍵当番を再承諾しました。代替の担当者は自動でキャンセルされました。`);
+        //await notifyAdmins(`🔙 *取消通知*\n*${updatedDuty.user.name}* さんが ${updatedDuty.date} の「不可」を取り消し、鍵当番を再承諾しました。代替の担当者は自動でキャンセルされました。`);
       
       } else if (previousStatus !== 'ACCEPTED') {
         // 通常の承諾の場合（管理者のみに通知）
@@ -361,7 +361,7 @@ app.patch('/api/schedule/:id', async (req, res) => {
 
       if (!bestCandidate) {
         console.log(`[SMART-REASSIGN] 🚨 No candidates left! Everyone rejected.`);
-       await notifyAdmins(`🚨 *警告：候補者なし*\n${targetDateStr} の当番を *${updatedDuty.user.name}* さんが不可としましたが、他に代われる人がいません！手動で調整してください。`);
+       await notifyAdmins(`🚨${duty.date}の鍵開け当番に割り当てられている ${duty.user.name} さんから返答がありません。 `);
         
         // 🟢 FIX: Added return here to match your other blocks safely
         return res.json(updatedDuty); 
@@ -378,7 +378,7 @@ app.patch('/api/schedule/:id', async (req, res) => {
       console.log(`[SMART-REASSIGN] 🎉 Assigned to: ${bestCandidate.name}`);
 
       // 🟢 1. 管理者へ「誰が不可で、誰に再割り当てされたか」を詳しく通知
-      await notifyAdmins(`❌ *不可および自動再割当*\n${targetDateStr} の担当だった *${updatedDuty.user.name}* さんが不可としたため、新しい担当者として *${bestCandidate.name}* さんを自動割り当てしました。`);
+      //await notifyAdmins(`❌ *不可および自動再割当*\n${targetDateStr} の担当だった *${updatedDuty.user.name}* さんが不可としたため、新しい担当者として *${bestCandidate.name}* さんを自動割り当てしました。`);
 
       // 🟢 2. 新しい担当者本人へ通知
       await notifyUser(bestCandidate.name, `${updatedDuty.user.name}さんが不可のため、代わりに${newDuty.date}の鍵開けとなりました。`);
@@ -426,31 +426,20 @@ app.get('/api/schedule/reset', async (req, res) => {
 // ==========================================
 app.post('/api/schedule/generate', async (req, res) => {
   try {
-    console.log("🚀 Generating 2 weeks of schedule...");
+    console.log("🚀 Generating 2 weeks of schedule (Safe Mode)...");
 
     // 1. Fetch holidays (using the correct name from your dateUtils)
     const publicHolidays = await getHolidays(); 
+
+    // 🟢 FIX: Start checking from TODAY, not the end of the database
+    let currentDate = new Date();
     
-    const lastDuty = await prisma.duty.findFirst({ orderBy: { date: 'desc' } });
-
-    let startDate = new Date();
-    if (lastDuty && lastDuty.date) {
-       const dateStr = lastDuty.date.split(' ')[0];
-       startDate = new Date(dateStr);
-       startDate.setDate(startDate.getDate() + 1); 
-    } else {
-       const dayOfWeek = startDate.getDay();
-       if (dayOfWeek === 6) startDate.setDate(startDate.getDate() + 2); 
-       else if (dayOfWeek === 0) startDate.setDate(startDate.getDate() + 1); 
-    }
-
-    let addedDays = 0;
-    let currentDate = startDate;
-    const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
+    let checkedWorkingDays = 0;
     let generatedCount = 0;
+    const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
 
-    // 2. The Generation Loop
-    while (addedDays < 10) {
+    // 2. Loop until we have safely checked exactly 10 valid working days
+    while (checkedWorkingDays < 10) {
       const yyyy = currentDate.getFullYear();
       const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
       const dd = String(currentDate.getDate()).padStart(2, '0');
@@ -458,25 +447,36 @@ app.post('/api/schedule/generate', async (req, res) => {
       
       const dayOfWeek = currentDate.getDay();
       
-      // 🟢 Check if the date exists in the holiday API response
+      // Check if the date exists in the holiday API response
       const isPublicHoliday = publicHolidays[checkDateStr] !== undefined;
 
-      // 🟢 Only assign if NOT Weekend AND NOT Holiday
+      // Only process if NOT Weekend AND NOT Holiday
       if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isPublicHoliday) {
-        const formattedDate = `${checkDateStr} (${daysOfWeek[dayOfWeek]})`;
-        const bestCandidate = await findBestCandidate(formattedDate, []);
+        checkedWorkingDays++; // Count this as one of our 10 target working days
         
-        if (bestCandidate) {
-          await prisma.duty.create({
-            data: {
-              date: formattedDate,
-              status: 'PENDING',
-              userId: bestCandidate.id
-            }
-          });
-          generatedCount++;
+        // 🟢 FIX: Check if this exact date ALREADY exists in the database
+        const existingDuty = await prisma.duty.findFirst({
+          where: { date: { startsWith: checkDateStr } }
+        });
+
+        if (!existingDuty) {
+          // Date is missing! Find a candidate and create it.
+          const formattedDate = `${checkDateStr} (${daysOfWeek[dayOfWeek]})`;
+          const bestCandidate = await findBestCandidate(formattedDate, []);
+          
+          if (bestCandidate) {
+            await prisma.duty.create({
+              data: {
+                date: formattedDate,
+                status: 'PENDING',
+                userId: bestCandidate.id
+              }
+            });
+            generatedCount++;
+          }
+        } else {
+          console.log(`Skipping: ${checkDateStr} (Schedule already exists)`);
         }
-        addedDays++; 
       } else {
         console.log(`Skipping: ${checkDateStr} (${isPublicHoliday ? 'Holiday' : 'Weekend'})`);
       }
@@ -484,7 +484,11 @@ app.post('/api/schedule/generate', async (req, res) => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    await notifyAllUsers(`🗓️ *スケジュール生成完了*\n祝日を除外して2週間分の鍵当番が生成されました。各自ダッシュボードから確認をお願いします。`);
+    // 🟢 FIX: Only notify everyone IF new days were actually added
+    if (generatedCount > 0) {
+      await notifyAllUsers(`🗓️ *スケジュール生成完了*\n祝日を除外して新しい鍵当番（${generatedCount}日分）が追加されました。各自ダッシュボードから確認をお願いします。`);
+    }
+
     res.status(201).json({ message: "Generated successfully!", count: generatedCount });
   } catch (error) {
     console.error("Error generating schedule:", error);

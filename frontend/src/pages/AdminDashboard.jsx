@@ -56,8 +56,30 @@ export default function AdminDashboard() {
     
     const squashedSchedule = Object.values(groupedObj);
     squashedSchedule.sort((a, b) => new Date(a.date.split(' ')[0]) - new Date(b.date.split(' ')[0]));
+
+    // 🟢 NEW: Calendar Math to perfectly detect a new week (even after holidays!)
+    for (let i = 1; i < squashedSchedule.length; i++) {
+      const prevDateStr = squashedSchedule[i - 1].date.split(' ')[0];
+      const currDateStr = squashedSchedule[i].date.split(' ')[0];
+
+      const [pY, pM, pD] = prevDateStr.split('-');
+      const [cY, cM, cD] = currDateStr.split('-');
+      
+      const prevD = new Date(parseInt(pY), parseInt(pM) - 1, parseInt(pD));
+      const currD = new Date(parseInt(cY), parseInt(cM) - 1, parseInt(cD));
+
+      // Calculate exact days between rows
+      const diffDays = (currD - prevD) / (1000 * 60 * 60 * 24);
+      
+      // If the gap is 7+ days, OR if the day of the week goes backwards (e.g. Friday to Thursday), it crossed a weekend!
+      if (diffDays >= 7 || currD.getDay() <= prevD.getDay()) {
+        squashedSchedule[i].isNewWeek = true;
+      }
+    }
+
     return squashedSchedule;
   };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -271,64 +293,91 @@ export default function AdminDashboard() {
                 <th className="px-6 py-4">代理操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            {/* 🟢 FIX 1: Removed "divide-y divide-slate-100" from here so it stops blocking our custom borders! */}
+            <tbody className="bg-white">
               <AnimatePresence>
                 {filteredSchedule.length > 0 ? (
-                  filteredSchedule.map((row) => (
-                    <motion.tr 
-                      layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      key={row.id} 
-                      className={`transition-colors ${getRowStyle(row.status)}`}
-                    >
-                      <td className="px-6 py-4 font-medium text-slate-700">{row.date}</td>
-                      
-                      {/* 🟢 履歴（取り消し線）と手動アサイン用ドロップダウン */}
-                      <td className="px-6 py-4 text-slate-900 font-bold">
-                        <div className="flex items-center flex-wrap gap-2">
-                          {row.history && row.history.map((oldName, index) => (
-                            <span key={index} className="line-through text-red-400/80 font-medium text-xs flex items-center">
-                              {oldName}
-                              <span className="text-slate-300 ml-2 no-underline">→</span>
-                            </span>
-                          ))}
-                          
-                          {/* 🟢 THE DROPDOWN MENU */}
-                          <select 
-                            value={row.assignee}
-                            onChange={(e) => handleManualAssign(row.id, e.target.value)}
-                            className="bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-[#B01A24] focus:border-[#B01A24] block w-[160px] p-1.5 cursor-pointer font-bold shadow-sm"
-                          >
-                            {userStats.map(stat => (
-                              <option key={stat.fullName || stat.name} value={stat.fullName || stat.name}>
-                                {stat.fullName || stat.name}
-                              </option>
-                            ))}
-                          </select>
+                  filteredSchedule.flatMap((row, index) => {
+                    
+                    const rowElements = [];
 
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4">{renderStatusBadge(row.status)}</td>
-                      <td className="px-6 py-4">
-                        {/* 🟢 justify-end を justify-start に変更して、ボタンも左寄せにする */}
-                        <div className="flex items-center justify-start gap-2 flex-nowrap">
-                          
-                          {/* 🟢 不可 (アイコンなし) */}
-                          <button 
-                            onClick={() => handleProxyAction(row.id, 'REJECTED')} 
-                            // 🛑 FIX 2: 【変更】isPastDeadline(row.date) を追加
-                            disabled={row.status === 'REJECTED' || isPastDeadline(row.date)} 
-                            className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-black text-white hover:bg-gray-800 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black disabled:-translate-y-0 disabled:shadow-md disabled:cursor-not-allowed whitespace-nowrap"
-                          >
-                            {/* 🛑 FIX 2: 【変更】期限切れの場合はテキストを変える */}
-                            {row.status === 'REJECTED' ? '不可登録済' : isPastDeadline(row.date) ? '期限切れ' : '不可'}
-                          </button>
-                          
-                          {/* 🟢 承諾ボタン（赤色） */}
+                    // 🌟 BETTER UI: Inject a beautiful, slim sub-header row for new weeks!
+                    if (row.isNewWeek) {
+                      rowElements.push(
+                        <motion.tr
+                          layout
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          key={`divider-${row.id}`}
+                          className="bg-slate-50"
+                        >
+                          <td colSpan="4" className="px-6 py-2 border-y border-slate-200">
+                            <div className="flex items-center gap-3 w-full opacity-70">
+                              <div className="h-px bg-slate-300 flex-grow"></div>
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                新しい週 (New Week)
+                              </span>
+                              <div className="h-px bg-slate-300 flex-grow"></div>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    }
+
+                    // 🟢 The actual data row (notice we removed the custom border classes here)
+                    rowElements.push(
+                      <motion.tr 
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        key={row.id} 
+                        className={`transition-colors border-t border-slate-100 ${getRowStyle(row.status)}`}
+                      >
+                        <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
+                          {row.date}
+                        </td>
+                        
+                        <td className="px-6 py-4 text-slate-900 font-bold">
+                          <div className="flex items-center flex-wrap gap-2">
+                            {row.history && row.history.map((oldName, i) => (
+                              <span key={i} className="line-through text-red-400/80 font-medium text-xs flex items-center">
+                                {oldName}
+                                <span className="text-slate-300 ml-2 no-underline">→</span>
+                              </span>
+                            ))}
+                            
+                            <select 
+                              value={row.assignee}
+                              onChange={(e) => handleManualAssign(row.id, e.target.value)}
+                              className="bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-[#B01A24] focus:border-[#B01A24] block w-[160px] p-1.5 cursor-pointer font-bold shadow-sm"
+                            >
+                              {userStats.map(stat => (
+                                <option key={stat.fullName || stat.name} value={stat.fullName || stat.name}>
+                                  {stat.fullName || stat.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {renderStatusBadge(row.status)}
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-start gap-2 flex-nowrap">
+                            
+                            <button 
+                              onClick={() => handleProxyAction(row.id, 'REJECTED')} 
+                              disabled={row.status === 'REJECTED' || isPastDeadline(row.date)} 
+                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-black text-white hover:bg-gray-800 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black disabled:-translate-y-0 disabled:shadow-md disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                              {row.status === 'REJECTED' ? '不可登録済' : isPastDeadline(row.date) ? '期限切れ' : '不可'}
+                            </button>
+                            
                             <button 
                               onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
                               disabled={row.status === 'ACCEPTED'} 
@@ -336,29 +385,30 @@ export default function AdminDashboard() {
                             >
                               {row.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
                             </button>
-                          
-                          {/* 🟢 不要 / 元に戻す (アイコンなし) */}
-                          {row.status === 'NOT_NEEDED' ? (
-                            <button
-                              onClick={() => handleProxyAction(row.id, 'PENDING')}
-                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-blue-900/20 cursor-pointer whitespace-nowrap"
-                            >
-                              元に戻す
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleProxyAction(row.id, 'NOT_NEEDED')}
-                              /* 🟢 以前ここにあった disabled=... の行を削除しました。これでいつでも押せます！ */
-                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-slate-500 text-white hover:bg-slate-600 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-slate-900/20 cursor-pointer whitespace-nowrap"
-                            >
-                              不要
-                            </button>
-                          )}
-                          
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))
+                            
+                            {row.status === 'NOT_NEEDED' ? (
+                              <button
+                                onClick={() => handleProxyAction(row.id, 'PENDING')}
+                                className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-blue-900/20 cursor-pointer whitespace-nowrap"
+                              >
+                                元に戻す
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleProxyAction(row.id, 'NOT_NEEDED')}
+                                className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-slate-500 text-white hover:bg-slate-600 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-slate-900/20 cursor-pointer whitespace-nowrap"
+                              >
+                                不要
+                              </button>
+                            )}
+                            
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+
+                    return rowElements;
+                  })
                 ) : (
                   <tr>
                     <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
