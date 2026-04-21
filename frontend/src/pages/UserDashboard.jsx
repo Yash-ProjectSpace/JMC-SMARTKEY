@@ -293,7 +293,7 @@ const fetchData = async () => {
 
           <div className="relative flex-grow min-h-0">
             {duties.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center h-full flex flex-col items-center justify-center absolute inset-0">
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center h-full flex flex-col items-center justify-center lg:absolute lg:inset-0 min-h-[200px] lg:min-h-0">
                 <div className="w-12 h-12 lg:w-16 lg:h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                   <CheckCircle2 className="text-slate-300" size={28} />
                 </div>
@@ -302,7 +302,7 @@ const fetchData = async () => {
               </div>
             ) : (
               /* 🟢 FIX 1: absolute inset-0 を使って親枠の中に完全に閉じ込める！ 3枚以上の時だけスクロールバーを出す */
-              <div className={`flex flex-col gap-3 lg:gap-4 absolute inset-0 ${duties.length > 2 ? 'overflow-y-auto custom-scrollbar pr-2 pb-2' : ''}`}>
+              <div className={`flex flex-col gap-3 lg:gap-4 lg:absolute lg:inset-0 w-full ${duties.length > 2 ? 'overflow-y-auto custom-scrollbar pr-2 pb-2' : ''}`}>
                 {duties.map((duty) => (
                   /* 🟢 FIX 2: 条件分岐！ 2枚以下の時はエフェクトあり(hover:...)。3枚以上の時はエフェクトなし。 */
                   <div 

@@ -106,15 +106,18 @@ async function findBestCandidate(targetDateStr, blacklistedUserIds = []) {
     orderBy: { date: 'asc' }
   });
 
-  const userScores = eligibleUsers.map(user => {
+    const userScores = eligibleUsers.map(user => {
     const duties = allActiveDuties.filter(d => d.userId === user.id);
+    
+    // 🟢 FIX 2: Only count ACCEPTED duties for the fairness score
+    const acceptedCount = duties.filter(d => d.status === 'ACCEPTED').length;
+
     return {
       user,
-      score: duties.length, // The core metric for fairness
-      dutyDates: duties.map(d => d.date)
+      score: acceptedCount, // The updated metric for fairness
+      dutyDates: duties.map(d => d.date) // Keep all duties here so the consecutive-day block still works!
     };
   });
-
   // Sort by lowest score first
   userScores.sort((a, b) => a.score - b.score);
 
