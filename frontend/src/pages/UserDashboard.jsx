@@ -284,7 +284,7 @@ const fetchData = async () => {
         </section>
 
         {/* 2. あなたの担当予定 */}
-        <section className="flex flex-col h-full min-h-0">
+        <section className="flex flex-col h-[380px] lg:h-full min-h-0">
           <div className="flex items-center justify-between mb-4 h-8 shrink-0">
             <h2 style={jpFont} className="text-sm font-extrabold text-[#B01A24] tracking-wider flex items-center gap-2">
               <KeyRound size={16} /> あなたの担当予定
@@ -302,7 +302,7 @@ const fetchData = async () => {
               </div>
             ) : (
               /* 🟢 FIX 1: absolute inset-0 を使って親枠の中に完全に閉じ込める！ 3枚以上の時だけスクロールバーを出す */
-              <div className={`flex flex-col gap-3 lg:gap-4 lg:absolute lg:inset-0 w-full ${duties.length > 2 ? 'overflow-y-auto custom-scrollbar pr-2 pb-2' : ''}`}>
+             <div className={`flex flex-col gap-3 lg:gap-4 absolute inset-0 ${duties.length > 2 ? 'overflow-y-auto custom-scrollbar pr-2 pb-2' : ''}`}>
                 {duties.map((duty) => (
                   /* 🟢 FIX 2: 条件分岐！ 2枚以下の時はエフェクトあり(hover:...)。3枚以上の時はエフェクトなし。 */
                   <div 
