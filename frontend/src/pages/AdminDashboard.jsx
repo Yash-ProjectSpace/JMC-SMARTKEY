@@ -385,44 +385,48 @@ const handleGenerateSchedule = async () => {
                         </td>
                         
                         {/* 🟢 FIX 2: Action column is forced to a single line and fixed minimum width */}
-                        <td className="px-6 py-4 whitespace-nowrap w-[1%] text-left">
-                          {/* The existing flex-nowrap container already handles the inner buttons */}
-                          <div className="flex items-center justify-start gap-2 flex-nowrap">
-                            
-                            <button 
-                              onClick={() => handleProxyAction(row.id, 'REJECTED')} 
-                              disabled={row.status === 'REJECTED' || isPastDeadline(row.date)} 
-                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-black text-white hover:bg-gray-800 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-black/20 disabled:opacity-40 disabled:hover:bg-black disabled:-translate-y-0 disabled:shadow-md disabled:cursor-not-allowed whitespace-nowrap"
-                            >
-                              {row.status === 'REJECTED' ? '不可登録済' : isPastDeadline(row.date) ? '期限切れ' : '不可'}
-                            </button>
-                            
-                            <button 
-                              onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
-                              disabled={row.status === 'ACCEPTED'} 
-                              className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-[#B01A24] text-white hover:bg-red-800 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-red-900/20 disabled:opacity-40 disabled:hover:bg-[#B01A24] disabled:-translate-y-0 disabled:shadow-md disabled:cursor-not-allowed whitespace-nowrap"
-                            >
-                              {row.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
-                            </button>
-                            
-                            {row.status === 'NOT_NEEDED' ? (
-                              <button
-                                onClick={() => handleProxyAction(row.id, 'PENDING')}
-                                className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-blue-900/20 cursor-pointer whitespace-nowrap"
-                              >
-                                元に戻す
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleProxyAction(row.id, 'NOT_NEEDED')}
-                                className="py-1.5 lg:py-2 px-5 rounded-xl font-bold text-xs bg-slate-500 text-white hover:bg-slate-600 hover:-translate-y-1 hover:shadow-lg transition-all shadow-md shadow-slate-900/20 cursor-pointer whitespace-nowrap"
-                              >
-                                不要
-                              </button>
-                            )}
-                            
-                          </div>
-                        </td>
+{/* 🟢 FIX 2: Action column is forced to a single line and fixed minimum width */}
+<td className="px-6 py-4 whitespace-nowrap w-[1%] text-left">
+  {/* Reduced container min-width slightly to match smaller buttons */}
+  <div className="flex items-center justify-start gap-3 flex-nowrap min-w-[260px]">
+    
+    {/* BLACK BUTTON: REJECT */}
+    <button 
+      onClick={() => handleProxyAction(row.id, 'REJECTED')} 
+      disabled={row.status === 'REJECTED' || isPastDeadline(row.date)} 
+      className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-black text-white shadow-md shadow-black/20 hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:hover:bg-black disabled:-translate-y-0 disabled:shadow-sm disabled:cursor-not-allowed"
+    >
+      {row.status === 'REJECTED' ? '不可登録済' : isPastDeadline(row.date) ? '期限切れ' : '不可'}
+    </button>
+    
+    {/* RED BUTTON: ACCEPT */}
+    <button 
+      onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
+      disabled={row.status === 'ACCEPTED'} 
+      className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-[#B01A24] text-white shadow-md shadow-[#B01A24]/20 hover:bg-red-800 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:hover:bg-[#B01A24] disabled:-translate-y-0 disabled:shadow-sm disabled:cursor-not-allowed"
+    >
+      {row.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
+    </button>
+    
+    {/* SLATE/BLUE BUTTON: NOT NEEDED */}
+    {row.status === 'NOT_NEEDED' ? (
+      <button
+        onClick={() => handleProxyAction(row.id, 'PENDING')}
+        className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-blue-600 text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
+      >
+        元に戻す
+      </button>
+    ) : (
+      <button
+        onClick={() => handleProxyAction(row.id, 'NOT_NEEDED')}
+        className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-[#64748B] text-white shadow-md shadow-slate-500/20 hover:bg-slate-600 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
+      >
+        不要
+      </button>
+    )}
+    
+  </div>
+</td>
                       </motion.tr>
                     );
 
