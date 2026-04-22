@@ -98,7 +98,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const handleGenerateSchedule = async () => {
+const handleGenerateSchedule = async () => {
     setIsGenerating(true);
     try {
       const res = await fetch('https://kiitoban.jmc-ltd.co.jp/api/schedule/generate', {
@@ -106,7 +106,10 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        // Re-fetch all data
+        // 🟢 1. GET THE REPLY FROM THE BACKEND FIRST!
+        const generateData = await res.json();
+
+        // Re-fetch all data to update the table
         const scheduleRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/schedule');
         const scheduleData = await scheduleRes.json();
         setSchedule(processScheduleData(scheduleData)); 
@@ -115,7 +118,12 @@ export default function AdminDashboard() {
         const statsData = await statsRes.json();
         setUserStats(Array.isArray(statsData) ? statsData : []);
 
-        alert("スケジュールを更新しました！");
+        // 🟢 2. USE THE DYNAMIC DATA FOR THE ALERT
+        if (generateData.count > 0) {
+          alert(`【 ${generateData.range} 】のスケジュールを更新しました！`);
+        } else {
+          alert("追加が必要な新しい日程はありませんでした。"); // "No new days needed to be added"
+        }
       } else {
         const errorData = await res.json();
         alert(`エラー: ${errorData.error}`);
