@@ -186,12 +186,11 @@ export default function AdminDashboard() {
   });
 
   const renderStatusBadge = (status) => {
-    if (status === 'ACCEPTED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-bold"><CheckCircle2 size={14} /> <span>承諾 (Accepted)</span></span>;
-    if (status === 'REJECTED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-full text-xs font-bold"><XCircle size={14} /> <span>不可 (Rejected)</span></span>;
-    if (status === 'NOT_NEEDED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-full text-xs font-bold"><CheckCircle2 size={14} /> <span>不要 (Skipped)</span></span>;
-    return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 text-slate-500 border border-slate-200 rounded-full text-xs font-bold"><Clock size={14} /> <span>回答待ち (Pending)</span></span>;
+    if (status === 'ACCEPTED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-bold"><CheckCircle2 size={14} /> <span>承諾</span></span>;
+    if (status === 'REJECTED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-full text-xs font-bold"><XCircle size={14} /> <span>不可</span></span>;
+    if (status === 'NOT_NEEDED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-full text-xs font-bold"><CheckCircle2 size={14} /> <span>不要</span></span>;
+    return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 text-slate-500 border border-slate-200 rounded-full text-xs font-bold"><Clock size={14} /> <span>回答待ち</span></span>;
   };
-
   const getRowStyle = (status) => {
     if (status === 'ACCEPTED') return 'bg-green-50/50 hover:bg-green-100/50';
     if (status === 'REJECTED') return 'bg-red-50/50 hover:bg-red-100/50';
@@ -287,14 +286,19 @@ export default function AdminDashboard() {
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead className="bg-white border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-semibold">
               <tr>
-                <th className="px-6 py-4">日付</th>
-                <th className="px-6 py-4">担当者</th>
-                <th className="px-6 py-4">状況</th>
-                <th className="px-6 py-4">代理操作</th>
+                {/* 🟢 Force single line, exact fit */}
+                <th className="px-6 py-4 w-[1%] whitespace-nowrap">日付</th>
+                
+                {/* 🟢 FIX: Added 'text-center' to align perfectly with the dropdowns below */}
+                <th className="px-6 py-4 text-center">担当者</th>
+                
+                {/* 🟢 Force single line, exact fit */}
+                <th className="px-6 py-4 w-[1%] whitespace-nowrap">状況</th>
+                <th className="px-6 py-4 w-[1%] whitespace-nowrap">代理操作</th>
               </tr>
             </thead>
             {/* 🟢 FIX 1: Removed "divide-y divide-slate-100" from here so it stops blocking our custom borders! */}
-            <tbody className="bg-white">
+<tbody className="bg-white">
               <AnimatePresence>
                 {filteredSchedule.length > 0 ? (
                   filteredSchedule.flatMap((row, index) => {
@@ -325,7 +329,7 @@ export default function AdminDashboard() {
                       );
                     }
 
-                    // 🟢 The actual data row (notice we removed the custom border classes here)
+                    // 🟢 The actual data row
                     rowElements.push(
                       <motion.tr 
                         layout
@@ -336,12 +340,15 @@ export default function AdminDashboard() {
                         key={row.id} 
                         className={`transition-colors border-t border-slate-100 ${getRowStyle(row.status)}`}
                       >
-                        <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
+                        {/* 🟢 FIX 2: Date column is forced to a single line and fixed minimum width */}
+                        <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap w-[1%] text-left">
                           {row.date}
                         </td>
                         
+                        {/* 🟢 FIX 3: Assignee column is horizontally centered and flexible (allows line wrap) */}
                         <td className="px-6 py-4 text-slate-900 font-bold">
-                          <div className="flex items-center flex-wrap gap-2">
+                          {/* 🟢 justify-center centers the history arrows and dropdown group */}
+                          <div className="flex items-center justify-center flex-wrap gap-2 text-center">
                             {row.history && row.history.map((oldName, i) => (
                               <span key={i} className="line-through text-red-400/80 font-medium text-xs flex items-center">
                                 {oldName}
@@ -349,6 +356,7 @@ export default function AdminDashboard() {
                               </span>
                             ))}
                             
+                            {/* 🟢 THE DROPDOWN MENU (text is centered implicitly by the parent text-center) */}
                             <select 
                               value={row.assignee}
                               onChange={(e) => handleManualAssign(row.id, e.target.value)}
@@ -363,11 +371,14 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        {/* 🟢 FIX 2: Status column is forced to a single line and fixed minimum width */}
+                        <td className="px-6 py-4 whitespace-nowrap w-[1%] text-left">
                           {renderStatusBadge(row.status)}
                         </td>
                         
-                        <td className="px-6 py-4">
+                        {/* 🟢 FIX 2: Action column is forced to a single line and fixed minimum width */}
+                        <td className="px-6 py-4 whitespace-nowrap w-[1%] text-left">
+                          {/* The existing flex-nowrap container already handles the inner buttons */}
                           <div className="flex items-center justify-start gap-2 flex-nowrap">
                             
                             <button 
