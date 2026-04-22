@@ -422,45 +422,51 @@ app.get('/api/schedule/reset', async (req, res) => {
 });
 
 // ==========================================
-// 📅 5. AUTO-GENERATE 2 WEEKS (MANUAL BUTTON)
+// 📅 5. AUTO-GENERATE 2 WEEKS (CALENDAR LOCKED)
 // ==========================================
 app.post('/api/schedule/generate', async (req, res) => {
   try {
-    console.log("🚀 Generating 2 weeks of schedule (Safe Mode)...");
+    console.log("🚀 Generating schedule until the end of next week (Calendar Math)...");
 
-    // 1. Fetch holidays (using the correct name from your dateUtils)
     const publicHolidays = await getHolidays(); 
 
-    // 🟢 FIX: Start checking from TODAY, not the end of the database
     let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    // 🟢 CALENDAR MATH: Find exactly the Friday of the "week after next"
+    let targetEndDate = new Date();
+    const currentDayOfWeek = targetEndDate.getDay();
     
-    let checkedWorkingDays = 0;
+    let daysUntilFriday = 5 - currentDayOfWeek;
+    if (currentDayOfWeek === 6) daysUntilFriday = 6; // If Saturday, base it on next Friday
+    if (currentDayOfWeek === 0) daysUntilFriday = 5; // If Sunday, base it on next Friday
+
+    // This week's Friday + 2 full weeks (14 days)
+    targetEndDate.setDate(targetEndDate.getDate() + daysUntilFriday + 14);
+    targetEndDate.setHours(23, 59, 59, 999);
+
     let generatedCount = 0;
     const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
 
-    // 2. Loop until we have safely checked exactly 10 valid working days
-    while (checkedWorkingDays < 10) {
+    // 🟢 FIX: Loop by DATE limits instead of counting 10 days!
+    while (currentDate <= targetEndDate) {
       const yyyy = currentDate.getFullYear();
       const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
       const dd = String(currentDate.getDate()).padStart(2, '0');
       const checkDateStr = `${yyyy}-${mm}-${dd}`;
       
       const dayOfWeek = currentDate.getDay();
-      
-      // Check if the date exists in the holiday API response
       const isPublicHoliday = publicHolidays[checkDateStr] !== undefined;
 
       // Only process if NOT Weekend AND NOT Holiday
       if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isPublicHoliday) {
-        checkedWorkingDays++; // Count this as one of our 10 target working days
         
-        // 🟢 FIX: Check if this exact date ALREADY exists in the database
+        // Skip if this exact date ALREADY exists in the database
         const existingDuty = await prisma.duty.findFirst({
           where: { date: { startsWith: checkDateStr } }
         });
 
         if (!existingDuty) {
-          // Date is missing! Find a candidate and create it.
           const formattedDate = `${checkDateStr} (${daysOfWeek[dayOfWeek]})`;
           const bestCandidate = await findBestCandidate(formattedDate, []);
           
@@ -474,17 +480,12 @@ app.post('/api/schedule/generate', async (req, res) => {
             });
             generatedCount++;
           }
-        } else {
-          console.log(`Skipping: ${checkDateStr} (Schedule already exists)`);
         }
-      } else {
-        console.log(`Skipping: ${checkDateStr} (${isPublicHoliday ? 'Holiday' : 'Weekend'})`);
       }
-
+      // Move forward exactly 1 calendar day
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // 🟢 FIX: Only notify everyone IF new days were actually added
     if (generatedCount > 0) {
       await notifyAllUsers(`🗓️ *スケジュール生成完了*\n祝日を除外して新しい鍵当番（${generatedCount}日分）が追加されました。各自ダッシュボードから確認をお願いします。`);
     }
@@ -539,20 +540,27 @@ cron.schedule('30 8 * * 5', async () => {
   console.log('⏰ Running Friday 8:30 AM Cron: Weekly Schedule Generation & Announcement');
 
   try {
-    // 1. Fetch holidays
     const publicHolidays = await getHolidays(); 
     
-    // 2. Start from Monday of the week after next (+10 days from today, Friday)
-    const today = new Date();
-    let currentDate = new Date(today);
-    currentDate.setDate(currentDate.getDate() + 10);
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    // 🟢 CALENDAR MATH: Find exactly the Friday of the "week after next"
+    let targetEndDate = new Date();
+    const currentDayOfWeek = targetEndDate.getDay();
+    
+    let daysUntilFriday = 5 - currentDayOfWeek;
+    if (currentDayOfWeek === 6) daysUntilFriday = 6;
+    if (currentDayOfWeek === 0) daysUntilFriday = 5;
+
+    targetEndDate.setDate(targetEndDate.getDate() + daysUntilFriday + 14);
+    targetEndDate.setHours(23, 59, 59, 999);
 
     const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
     let generatedCount = 0;
-    let addedDays = 0;
 
-    // 3. Generate 10 working days (2 weeks)
-    while (addedDays < 10) {
+    // 🟢 FIX: Loop by DATE limits
+    while (currentDate <= targetEndDate) {
       const yyyy = currentDate.getFullYear();
       const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
       const dd = String(currentDate.getDate()).padStart(2, '0');
@@ -561,34 +569,27 @@ cron.schedule('30 8 * * 5', async () => {
       const dayOfWeek = currentDate.getDay();
       const isPublicHoliday = publicHolidays[checkDateStr] !== undefined;
 
-      // Only assign if NOT Weekend AND NOT Holiday
       if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isPublicHoliday) {
         const formattedDate = `${checkDateStr} (${daysOfWeek[dayOfWeek]})`;
         
-        // Prevent duplicates just in case
+        // Prevent duplicates
         const existing = await prisma.duty.findFirst({ where: { date: { startsWith: checkDateStr } } });
         
         if (!existing) {
           const bestCandidate = await findBestCandidate(formattedDate, []);
           if (bestCandidate) {
             await prisma.duty.create({
-              data: {
-                date: formattedDate,
-                status: 'PENDING',
-                userId: bestCandidate.id
-              }
+              data: { date: formattedDate, status: 'PENDING', userId: bestCandidate.id }
             });
             generatedCount++;
           }
         }
-        addedDays++; 
       }
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
     console.log(`✅ Schedule successfully generated in the database. (${generatedCount} days added)`);
 
-    // 4. Send the Notification IF days were actually added
     if (generatedCount > 0) {
       const msg = "来週および再来週の鍵開けスケジュールをお知らせします。割り当てられた日程をご確認のうえ、「承諾」または「不可」を選択してください。";
       await notifyAllUsers(msg);
