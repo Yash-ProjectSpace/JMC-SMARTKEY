@@ -433,21 +433,29 @@ app.post('/api/schedule/generate', async (req, res) => {
     let currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
-    // 🟢 CALENDAR MATH: Find exactly the Friday of the "week after next"
+// 🟢 SMART CALENDAR MATH: Find exactly the correct Friday
     let targetEndDate = new Date();
     const currentDayOfWeek = targetEndDate.getDay();
     
-    let daysUntilFriday = 5 - currentDayOfWeek;
-    if (currentDayOfWeek === 6) daysUntilFriday = 6; // If Saturday, base it on next Friday
-    if (currentDayOfWeek === 0) daysUntilFriday = 5; // If Sunday, base it on next Friday
+    let offsetToThisFriday = 0;
+    if (currentDayOfWeek === 1) offsetToThisFriday = 4; // Mon -> This Fri
+    if (currentDayOfWeek === 2) offsetToThisFriday = 3; // Tue -> This Fri
+    if (currentDayOfWeek === 3) offsetToThisFriday = 2; // Wed -> This Fri
+    if (currentDayOfWeek === 4) offsetToThisFriday = 1; // Thu -> This Fri
+    if (currentDayOfWeek === 5) offsetToThisFriday = 0; // Fri -> This Fri
+    if (currentDayOfWeek === 6) offsetToThisFriday = 6; // Sat -> Next Fri
+    if (currentDayOfWeek === 0) offsetToThisFriday = 5; // Sun -> Next Fri
 
-    // This week's Friday + 2 full weeks (14 days)
-    targetEndDate.setDate(targetEndDate.getDate() + daysUntilFriday + 14);
+    // ✨ THE MAGIC RULE:
+    // If clicked Mon-Thu: Stop at NEXT week's Friday (+7 days)
+    // If clicked Fri-Sun: Stop at WEEK AFTER NEXT's Friday (+14 days)
+    const extraDays = (currentDayOfWeek === 5 || currentDayOfWeek === 6 || currentDayOfWeek === 0) ? 14 : 7;
+    
+    targetEndDate.setDate(targetEndDate.getDate() + offsetToThisFriday + extraDays);
     targetEndDate.setHours(23, 59, 59, 999);
 
     let generatedCount = 0;
     const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
-
     // 🟢 FIX: Loop by DATE limits instead of counting 10 days!
     while (currentDate <= targetEndDate) {
       const yyyy = currentDate.getFullYear();
