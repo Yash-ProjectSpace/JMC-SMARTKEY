@@ -194,10 +194,12 @@ const handleGenerateSchedule = async () => {
   });
 
   const renderStatusBadge = (status) => {
-    if (status === 'ACCEPTED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-bold"><CheckCircle2 size={14} /> <span>承諾</span></span>;
-    if (status === 'REJECTED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-full text-xs font-bold"><XCircle size={14} /> <span>不可</span></span>;
-    if (status === 'NOT_NEEDED') return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-full text-xs font-bold"><CheckCircle2 size={14} /> <span>不要</span></span>;
-    return <span className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 text-slate-500 border border-slate-200 rounded-full text-xs font-bold"><Clock size={14} /> <span>回答待ち</span></span>;
+    // 🟢 CHANGED: w-[88px] (slimmer), py-1 (shorter), text-[11px] (smaller text), size={12} (smaller icons), and space-x-1 (tighter gap)
+    if (status === 'ACCEPTED') return <span className="inline-flex items-center justify-center space-x-1 w-[88px] py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-[11px] font-bold shadow-sm"><CheckCircle2 size={12} /> <span>承諾</span></span>;
+    if (status === 'REJECTED') return <span className="inline-flex items-center justify-center space-x-1 w-[88px] py-1 bg-red-50 text-red-600 border border-red-200 rounded-full text-[11px] font-bold shadow-sm"><XCircle size={12} /> <span>不可</span></span>;
+    if (status === 'NOT_NEEDED') return <span className="inline-flex items-center justify-center space-x-1 w-[88px] py-1 bg-slate-100 text-slate-500 border border-slate-300 rounded-full text-[11px] font-bold shadow-sm"><CheckCircle2 size={12} /> <span>不要</span></span>;
+    
+    return <span className="inline-flex items-center justify-center space-x-1 w-[88px] py-1 bg-slate-100 text-slate-600 border border-slate-300 rounded-full text-[11px] font-bold shadow-sm"><Clock size={12} /> <span>回答待ち</span></span>;
   };
   const getRowStyle = (status) => {
     if (status === 'ACCEPTED') return 'bg-green-50/50 hover:bg-green-100/50';
@@ -324,15 +326,16 @@ const handleGenerateSchedule = async () => {
                           key={`divider-${row.id}`}
                           className="bg-slate-50"
                         >
-                          <td colSpan="4" className="px-6 py-2 border-y border-slate-200">
-                            <div className="flex items-center gap-3 w-full opacity-70">
-                              <div className="h-px bg-slate-300 flex-grow"></div>
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                新しい週 (New Week)
-                              </span>
-                              <div className="h-px bg-slate-300 flex-grow"></div>
-                            </div>
-                          </td>
+                          <td colSpan="4" className="px-6 py-3 border-y border-slate-200">
+    {/* 🟢 REMOVED: opacity-70. CHANGED: text-[11px] and text-slate-700 for better contrast */}
+    <div className="flex items-center gap-3 w-full">
+      <div className="h-px bg-slate-300 flex-grow"></div>
+      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest bg-slate-50 px-2">
+        新しい週 
+      </span>
+      <div className="h-px bg-slate-300 flex-grow"></div>
+    </div>
+  </td>
                         </motion.tr>
                       );
                     }

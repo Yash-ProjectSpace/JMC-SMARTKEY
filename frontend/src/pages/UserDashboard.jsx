@@ -484,26 +484,25 @@ const fetchData = async () => {
                           {row.assignee} 
                         </span>
                       </td>
-                      <td className="px-4 lg:px-6 py-3 lg:py-4 text-right whitespace-nowrap">
-                        {row.status === 'ACCEPTED' ? (
-                          <span className="inline-flex items-center px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-[10px] lg:text-xs font-bold shadow-sm">
-                            承諾済み
-                          </span>
-                        ) : row.status === 'REJECTED' ? (
-                          <span className="inline-flex items-center px-3 py-1 bg-gray-900 text-white border border-black rounded-full text-[10px] lg:text-xs font-bold shadow-sm line-through decoration-white/50">
-                            不可
-                          </span>
-                        ) : row.status === 'NOT_NEEDED' ? (
-                          /* 🟢 ADDED HERE: NOT_NEEDED Label */
-                          <span className="inline-flex items-center px-3 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-full text-[10px] lg:text-xs font-bold shadow-sm">
-                            不要
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-3 py-1 bg-slate-100 text-slate-500 border border-slate-200 rounded-full text-[10px] lg:text-xs font-bold shadow-sm">
-                            未回答
-                          </span>
-                        )}
-                      </td>
+<td className="px-4 lg:px-6 py-3 lg:py-4 text-right whitespace-nowrap">
+  {row.status === 'ACCEPTED' ? (
+    <span className="inline-flex items-center justify-center w-[76px] py-0.5 bg-green-50 text-green-700 border border-green-200 rounded-full text-[10px] font-bold shadow-sm tracking-wider">
+      承諾済み
+    </span>
+  ) : row.status === 'REJECTED' ? (
+    <span className="inline-flex items-center justify-center w-[76px] py-0.5 bg-gray-900 text-white border border-black rounded-full text-[10px] font-bold shadow-sm line-through decoration-white/50 tracking-wider">
+      不可
+    </span>
+  ) : row.status === 'NOT_NEEDED' ? (
+    <span className="inline-flex items-center justify-center w-[76px] py-0.5 bg-slate-100 text-slate-500 border border-slate-300 rounded-full text-[10px] font-bold shadow-sm tracking-wider">
+      不要
+    </span>
+  ) : (
+    <span className="inline-flex items-center justify-center w-[76px] py-0.5 bg-slate-100 text-slate-600 border border-slate-300 rounded-full text-[10px] font-bold shadow-sm tracking-wider">
+      未回答
+    </span>
+  )}
+</td>
                     </tr>
                   );
                 })
