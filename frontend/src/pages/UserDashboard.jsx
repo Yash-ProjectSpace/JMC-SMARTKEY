@@ -15,7 +15,7 @@ export default function UserDashboard({ currentUser }) {
 
 const fetchData = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/schedule');
+      const res = await fetch('http://57.181.130.234:5000/api/schedule');
       const allData = await res.json();
       
       if (!Array.isArray(allData)) return;
@@ -119,7 +119,7 @@ const fetchData = async () => {
     setFullCompanySchedule(prev => prev.map(row => row.id === id ? { ...row, status: newStatus } : row));
 
     try {
-      const response = await fetch(`http://localhost:5000/api/schedule/${id}`, {
+      const response = await fetch(`http://57.181.130.234:5000/api/schedule/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
