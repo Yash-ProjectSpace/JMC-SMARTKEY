@@ -115,7 +115,7 @@ export default function AdminDashboard() {
         const statsData = await statsRes.json();
         setUserStats(Array.isArray(statsData) ? statsData : []);
 
-        alert("次の2週間分（10営業日）のスケジュールを自動生成しました！");
+        alert("スケジュールを更新しました！");
       } else {
         const errorData = await res.json();
         alert(`エラー: ${errorData.error}`);

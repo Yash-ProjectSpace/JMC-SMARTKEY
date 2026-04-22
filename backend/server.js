@@ -454,8 +454,11 @@ app.post('/api/schedule/generate', async (req, res) => {
     targetEndDate.setDate(targetEndDate.getDate() + offsetToThisFriday + extraDays);
     targetEndDate.setHours(23, 59, 59, 999);
 
-    let generatedCount = 0;
+let generatedCount = 0;
+    let startDate = null; // 🟢 Track the first generated date
+    let endDate = null;   // 🟢 Track the last generated date
     const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
+
     // 🟢 FIX: Loop by DATE limits instead of counting 10 days!
     while (currentDate <= targetEndDate) {
       const yyyy = currentDate.getFullYear();
@@ -487,6 +490,10 @@ app.post('/api/schedule/generate', async (req, res) => {
               }
             });
             generatedCount++;
+
+            // 🟢 Capture the start and end dates
+            if (!startDate) startDate = checkDateStr; 
+            endDate = checkDateStr;
           }
         }
       }
@@ -495,10 +502,18 @@ app.post('/api/schedule/generate', async (req, res) => {
     }
 
     if (generatedCount > 0) {
-      await notifyAllUsers(`🗓️ *スケジュール生成完了*\n祝日を除外して新しい鍵当番（${generatedCount}日分）が追加されました。各自ダッシュボードから確認をお願いします。`);
+      // 🟢 Format the date range message
+      const dateRangeText = (startDate === endDate) ? startDate : `${startDate} 〜 ${endDate}`;
+      
+      await notifyAllUsers(`🗓️ *スケジュール作成完了*\n【 ${dateRangeText} 】の期間に、祝日を除外して新しい鍵当番が追加されました。各自ダッシュボードから確認をお願いします。`);
     }
 
-    res.status(201).json({ message: "Generated successfully!", count: generatedCount });
+    // 🟢 Send the range back to the frontend alert
+    res.status(201).json({ 
+      message: "Generated successfully!", 
+      count: generatedCount,
+      range: startDate && endDate ? `${startDate} 〜 ${endDate}` : ""
+    });
   } catch (error) {
     console.error("Error generating schedule:", error);
     res.status(500).json({ error: "Failed to generate schedule" });
