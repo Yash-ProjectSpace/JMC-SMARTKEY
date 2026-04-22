@@ -23,7 +23,7 @@ export default function App() {
     const userEmail = decoded.email;
 
     try {
-      const response = await fetch('http://57.181.130.234:5000/api/login', {
+      const response = await fetch('https://kiitoban.jmc-ltd.co.jp/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userEmail })
@@ -54,7 +54,7 @@ export default function App() {
   // 🟢 NEW: テスト用手動ログイン機能
   const handleManualLogin = async (userEmail) => {
     try {
-      const response = await fetch('http://57.181.130.234:5000/api/login', {
+      const response = await fetch('https://kiitoban.jmc-ltd.co.jp/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userEmail })

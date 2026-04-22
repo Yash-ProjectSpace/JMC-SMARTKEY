@@ -83,12 +83,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const scheduleRes = await fetch('http://57.181.130.234:5000/api/schedule');
+        const scheduleRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/schedule');
         const scheduleData = await scheduleRes.json();
         // 🟢 Squashロジックを適用してセット
         setSchedule(processScheduleData(scheduleData));
 
-        const statsRes = await fetch('http://57.181.130.234:5000/api/stats');
+        const statsRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/stats');
         const statsData = await statsRes.json();
         setUserStats(Array.isArray(statsData) ? statsData : []);
       } catch (error) {
@@ -101,17 +101,17 @@ export default function AdminDashboard() {
   const handleGenerateSchedule = async () => {
     setIsGenerating(true);
     try {
-      const res = await fetch('http://57.181.130.234:5000/api/schedule/generate', {
+      const res = await fetch('https://kiitoban.jmc-ltd.co.jp/api/schedule/generate', {
         method: 'POST'
       });
 
       if (res.ok) {
         // Re-fetch all data
-        const scheduleRes = await fetch('http://57.181.130.234:5000/api/schedule');
+        const scheduleRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/schedule');
         const scheduleData = await scheduleRes.json();
         setSchedule(processScheduleData(scheduleData)); 
 
-        const statsRes = await fetch('http://57.181.130.234:5000/api/stats');
+        const statsRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/stats');
         const statsData = await statsRes.json();
         setUserStats(Array.isArray(statsData) ? statsData : []);
 
@@ -135,18 +135,18 @@ export default function AdminDashboard() {
     );
 
     try {
-      await fetch(`http://57.181.130.234:5000/api/schedule/${id}`, {
+      await fetch(`https://kiitoban.jmc-ltd.co.jp/api/schedule/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
 
       // 🟢 代理操作後、データベースの最新状態（UndoやReassignの結果）を取得してSquash
-      const scheduleRes = await fetch('http://57.181.130.234:5000/api/schedule');
+      const scheduleRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/schedule');
       const scheduleData = await scheduleRes.json();
       setSchedule(processScheduleData(scheduleData));
 
-      const statsRes = await fetch('http://57.181.130.234:5000/api/stats');
+      const statsRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/stats');
       const statsData = await statsRes.json();
       setUserStats(Array.isArray(statsData) ? statsData : []);
     } catch (error) {
@@ -163,14 +163,14 @@ export default function AdminDashboard() {
 
     try {
       // 2. Send the new name to the backend
-      await fetch(`http://57.181.130.234:5000/api/schedule/${id}`, {
+      await fetch(`https://kiitoban.jmc-ltd.co.jp/api/schedule/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manualAssignee: newAssigneeFullName }),
       });
 
       // 3. Refresh data
-      const scheduleRes = await fetch('http://57.181.130.234:5000/api/schedule');
+      const scheduleRes = await fetch('https://kiitoban.jmc-ltd.co.jp/api/schedule');
       const scheduleData = await scheduleRes.json();
       setSchedule(processScheduleData(scheduleData));
     } catch (error) {

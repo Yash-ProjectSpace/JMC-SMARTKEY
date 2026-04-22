@@ -39,7 +39,7 @@ const ProfileModal = ({ isOpen, onClose, currentUser, setUser, onLogout }) => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/users/${currentUser.id}`, {
+      const res = await fetch(`https://kiitoban.jmc-ltd.co.jp/api/users/${currentUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editName, avatar: editAvatar }),
