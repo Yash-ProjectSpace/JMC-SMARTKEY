@@ -700,6 +700,9 @@ cron.schedule('0 10 * * *', async () => {
   } catch (error) {
     console.error('❌ Error in Daily 10AM cron:', error);
   }
+}, {
+  scheduled: true,
+  timezone: "Asia/Tokyo" 
 });
 
 // ④ DAILY 1:00 PM: Admin Warning for No Response
@@ -725,6 +728,9 @@ cron.schedule('0 13 * * *', async () => {
   } catch (error) {
     console.error('❌ Error in Daily 1PM cron:', error);
   }
+}, {
+  scheduled: true,
+  timezone: "Asia/Tokyo" 
 });
 
 // ==========================================
