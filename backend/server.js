@@ -683,7 +683,7 @@ cron.schedule('0 10 * * *', async () => {
       if (todayStr === reminder1DayBefore) {
         await notifyUser(
           duty.user.name, 
-          `⏰ *【リマインダー】明日の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番です！朝10:00の通知をお届けしています。朝のご対応よろしくお願いいたします。`
+          `⏰ *【リマインダー】明日の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番です！朝のご対応よろしくお願いいたします。`
         );
         console.log(`[REMINDER] Sent 1-working-day reminder to ${duty.user.name} for ${duty.date}`);
       }
