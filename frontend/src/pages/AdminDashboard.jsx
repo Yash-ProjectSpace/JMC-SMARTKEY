@@ -163,7 +163,11 @@ const handleGenerateSchedule = async () => {
   };
 
   // 🟢 NEW CODE: Manual Assign function
-  const handleManualAssign = async (id, newAssigneeFullName) => {
+  const handleManualAssign = async (id, newAssigneeFullName) => {  
+    // 🛑 ADDED: Confirm Dialog Pop-up
+    const confirmChange = window.confirm(`担当者を ${newAssigneeFullName} さんに変更していいですか？`);
+    if (!confirmChange) return; // If they click Cancel, stop here!
+
     // 1. Optimistic Update (仮の更新)
     setSchedule(currentSchedule => 
       currentSchedule.map(row => row.id === id ? { ...row, assignee: newAssigneeFullName, status: 'PENDING' } : row)
@@ -214,6 +218,14 @@ const handleGenerateSchedule = async () => {
     const deadline = new Date(`${baseDateStr}T13:00:00+09:00`); 
     deadline.setDate(deadline.getDate() - 1); 
     return new Date() > deadline; 
+  };
+  // 🛑 NEW: 当日（今日）かどうか判定する関数
+  const isToday = (dutyDateString) => {
+    if (!dutyDateString) return false;
+    const baseDateStr = dutyDateString.split(' ')[0]; 
+    // JST（日本時間）で今日の日付を取得 ("YYYY-MM-DD")
+    const todayJST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+    return baseDateStr === todayJST;
   };
   return (
     <div className="min-h-screen bg-[#FAF8F5] py-6 px-4 lg:px-8 space-y-8 font-sans">
@@ -371,7 +383,8 @@ const handleGenerateSchedule = async () => {
                             <select 
                               value={row.assignee}
                               onChange={(e) => handleManualAssign(row.id, e.target.value)}
-                              className="bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-[#B01A24] focus:border-[#B01A24] block w-[160px] p-1.5 cursor-pointer font-bold shadow-sm"
+                              disabled={isToday(row.date)} /* 🛑 1. ADD THE LOCK HERE */
+                              className="bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-[#B01A24] focus:border-[#B01A24] block w-[160px] p-1.5 cursor-pointer font-bold shadow-sm disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed"
                             >
                               {userStats.map(stat => (
                                 <option key={stat.fullName || stat.name} value={stat.fullName || stat.name}>
@@ -396,7 +409,7 @@ const handleGenerateSchedule = async () => {
     {/* BLACK BUTTON: REJECT */}
     <button 
       onClick={() => handleProxyAction(row.id, 'REJECTED')} 
-      disabled={row.status === 'REJECTED' || isPastDeadline(row.date)} 
+      disabled={row.status === 'REJECTED' || isPastDeadline(row.date) || isToday(row.date)}
       className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-black text-white shadow-md shadow-black/20 hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:hover:bg-black disabled:-translate-y-0 disabled:shadow-sm disabled:cursor-not-allowed"
     >
       {row.status === 'REJECTED' ? '不可登録済' : isPastDeadline(row.date) ? '期限切れ' : '不可'}
@@ -405,7 +418,7 @@ const handleGenerateSchedule = async () => {
     {/* RED BUTTON: ACCEPT */}
     <button 
       onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
-      disabled={row.status === 'ACCEPTED'} 
+      disabled={row.status === 'ACCEPTED' || isToday(row.date)}
       className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-[#B01A24] text-white shadow-md shadow-[#B01A24]/20 hover:bg-red-800 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:hover:bg-[#B01A24] disabled:-translate-y-0 disabled:shadow-sm disabled:cursor-not-allowed"
     >
       {row.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
@@ -415,6 +428,7 @@ const handleGenerateSchedule = async () => {
     {row.status === 'NOT_NEEDED' ? (
       <button
         onClick={() => handleProxyAction(row.id, 'PENDING')}
+        disabled={isToday(row.date)}
         className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-blue-600 text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
       >
         元に戻す
@@ -422,6 +436,7 @@ const handleGenerateSchedule = async () => {
     ) : (
       <button
         onClick={() => handleProxyAction(row.id, 'NOT_NEEDED')}
+        disabled={isToday(row.date)}
         className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-[#64748B] text-white shadow-md shadow-slate-500/20 hover:bg-slate-600 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
       >
         不要

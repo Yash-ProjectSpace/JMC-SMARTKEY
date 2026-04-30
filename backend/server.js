@@ -679,22 +679,44 @@ cron.schedule('0 10 * * *', async () => {
       const reminder3DaysBefore = await getTargetWorkingDateBefore(duty.date, 3);
       const reminder1DayBefore = await getTargetWorkingDateBefore(duty.date, 1);
 
-      // 1-Day Reminder Message
+      // 🛑 1-Day Reminder Message (Different message based on status!)
       if (todayStr === reminder1DayBefore) {
-        await notifyUser(
-          duty.user.name, 
-          `⏰ *【リマインダー】明日の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番です！朝のご対応よろしくお願いいたします。`
-        );
-        console.log(`[REMINDER] Sent 1-working-day reminder to ${duty.user.name} for ${duty.date}`);
+        if (duty.status === 'ACCEPTED') {
+          // 🟢 Normal reminder for people who already accepted
+          await notifyUser(
+            duty.user.name, 
+            `⏰ *【リマインダー】明日の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番です！朝のご対応よろしくお願いいたします。`
+          );
+          console.log(`[REMINDER] Sent 1-day NORMAL reminder to ${duty.user.name}`);
+        } 
+        else if (duty.status === 'PENDING') {
+          // 🔴 SUPER Urgent reminder for people who still haven't responded
+          await notifyUser(
+            duty.user.name, 
+            `🚨 *【超至急・未回答】明日の鍵開け当番*\n明日の営業日（${duty.date}）はあなたの鍵開け当番ですが、まだ回答がありません！至急ダッシュボードから「承諾」または「不可」を選択してください。`
+          );
+          console.log(`[REMINDER] Sent 1-day URGENT action request to ${duty.user.name}`);
+        }
       }
 
-      // 3-Day Reminder Message
+      // 🛑 3-Day Reminder Message (Different message based on status!)
       if (todayStr === reminder3DaysBefore) {
-        await notifyUser(
-          duty.user.name, 
-          `🗓️ *【事前確認】3営業日後の鍵開け当番*\n3営業日後の ${duty.date} はあなたの鍵開け当番として予定されています。まだ「承諾」を押していない場合はダッシュボードから確認をお願いします。`
-        );
-        console.log(`[REMINDER] Sent 3-working-day reminder to ${duty.user.name} for ${duty.date}`);
+        if (duty.status === 'ACCEPTED') {
+          // 🟢 Normal reminder for people who already accepted
+          await notifyUser(
+            duty.user.name, 
+            `🗓️ *【事前確認】*\n3営業日後の ${duty.date} はあなたの鍵開け当番です。ご準備のほどよろしくお願いいたします。`
+          );
+          console.log(`[REMINDER] Sent 3-day NORMAL reminder to ${duty.user.name}`);
+        } 
+        else if (duty.status === 'PENDING') {
+          // 🔴 Urgent reminder for people who haven't responded
+          await notifyUser(
+            duty.user.name, 
+            `🚨 *【至急・要回答】*\n3営業日後の ${duty.date} はあなたの鍵開け当番として予定されていますが、まだ回答がありません。「承諾」または「不可」の返信を至急行ってください。`
+          );
+          console.log(`[REMINDER] Sent 3-day URGENT action request to ${duty.user.name}`);
+        }
       }
     }
   } catch (error) {
