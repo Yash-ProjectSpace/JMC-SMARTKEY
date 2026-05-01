@@ -104,7 +104,8 @@ async function findBestCandidate(targetDateStr, blacklistedUserIds = [], inMemor
       NOT: [
         //{ name: '内木 敦' },
         //{ name: '藤原 志帆' },
-        { id: { in: blacklistedUserIds } }
+        { id: { in: blacklistedUserIds } },
+        { role: 'VIEWER' }
       ]
     }
   });
@@ -409,7 +410,7 @@ app.patch('/api/schedule/:id', async (req, res) => {
 // 3. Get User Stats
 app.get('/api/stats', async (req, res) => {
   try {
-    const users = await prisma.user.findMany({ include: { duties: true } });
+    const users = await prisma.user.findMany({ where: { role: { not: 'VIEWER' } },include: { duties: true } });
     const stats = users.map(user => {
       const familyName = user.name.split(' ')[0] || user.name; 
       return {
