@@ -87,7 +87,7 @@ async function notifyAdmins(messageText) {
 // ==========================================
 // 🧠 CORE LOGIC: The Duty Score & Fairness Engine
 // ==========================================
-async function findBestCandidate(targetDateStr, blacklistedUserIds = []) {
+async function findBestCandidate(targetDateStr, blacklistedUserIds = [], inMemoryScores = {}) {
   // 1. Get eligible users (exclude admins and the blacklist for this specific date)
   const eligibleUsers = await prisma.user.findMany({
     where: {
