@@ -110,13 +110,14 @@ async function findBestCandidate(targetDateStr, blacklistedUserIds = []) {
     const userScores = eligibleUsers.map(user => {
     const duties = allActiveDuties.filter(d => d.userId === user.id);
     
-    // 🟢 FIX 2: Only count ACCEPTED duties for the fairness score
-    const acceptedCount = duties.filter(d => d.status === 'ACCEPTED').length;
+// 🟢 NEW LOGIC: Count DB duties + what we JUST assigned in the current loop
+    const dbCount = duties.filter(d => d.status === 'ACCEPTED' || d.status === 'PENDING').length;
+    const currentSessionCount = inMemoryScores[user.id] || 0;
 
     return {
       user,
-      score: acceptedCount, // The updated metric for fairness
-      dutyDates: duties.map(d => d.date) // Keep all duties here so the consecutive-day block still works!
+      score: dbCount + currentSessionCount, // Combined score
+      dutyDates: duties.map(d => d.date)
     };
   });
   // Sort by lowest score first
@@ -460,6 +461,9 @@ let generatedCount = 0;
     let endDate = null;   // 🟢 Track the last generated date
     const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
 
+    // 🟢 CHANGE 1: Create the memory object here
+    const inMemoryScores = {};
+
     // 🟢 FIX: Loop by DATE limits instead of counting 10 days!
     while (currentDate <= targetEndDate) {
       const yyyy = currentDate.getFullYear();
@@ -480,7 +484,7 @@ let generatedCount = 0;
 
         if (!existingDuty) {
           const formattedDate = `${checkDateStr} (${daysOfWeek[dayOfWeek]})`;
-          const bestCandidate = await findBestCandidate(formattedDate, []);
+          const bestCandidate = await findBestCandidate(formattedDate, [], inMemoryScores);
           
           if (bestCandidate) {
             await prisma.duty.create({
@@ -490,6 +494,8 @@ let generatedCount = 0;
                 userId: bestCandidate.id
               }
             });
+
+            inMemoryScores[bestCandidate.id] = (inMemoryScores[bestCandidate.id] || 0) + 1;
             generatedCount++;
 
             // 🟢 Capture the start and end dates
