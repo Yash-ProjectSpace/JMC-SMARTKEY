@@ -16,8 +16,8 @@ export default function AdminDashboard() {
     if (!Array.isArray(rawData)) return [];
     
     const groupedObj = {};
-    // 🟢 追加1: 今日の日付を取得 (YYYY-MM-DD)
-    const todayStr = new Date().toISOString().split('T')[0];
+    // 🟢 修正後: 完全に日本時間（JST）で今日の日付を取得！
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
 
     rawData.forEach(duty => {
       const baseDate = duty.date.split(' ')[0]; 
