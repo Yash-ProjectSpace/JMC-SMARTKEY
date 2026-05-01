@@ -24,7 +24,8 @@ const USER_DIRECTORY = {
   "内木 敦": { url: process.env.WEBHOOK_UCHIKI_SAN, role: "ADMIN" },
   "藤原 志帆": { url: process.env.WEBHOOK_FUJIWARA_SAN, role: "ADMIN" },
   "廣瀬 昌美": { url: process.env.WEBHOOK_HIROSE_SAN, role: "ADMIN" },
-
+  "竹﨑 奈保": { url: process.env.WEBHOOK_TAKEZAKI_SAN, role: "ADMIN" },
+  "松岡 麻衣": { url: process.env.WEBHOOK_MATSUOKA_SAN, role: "ADMIN" },
   // 👤 一般ユーザー (USER)
   //"Om": { url: process.env.WEBHOOK_OM, role: "USER" },
 };
