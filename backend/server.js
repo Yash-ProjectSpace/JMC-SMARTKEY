@@ -52,11 +52,21 @@ async function sendWebhook(url, messageText) {
   }
 }
 
+// 🟢 NEW VERSION: Ignores spaces so it always finds the right person!
 async function notifyUser(userName, messageText) {
-  const user = USER_DIRECTORY[userName];
-  if (user && user.url) {
-    await sendWebhook(user.url, messageText);
+  if (!userName) return;
+
+  const cleanTargetName = userName.replace(/[\s　]+/g, '');
+  
+  const matchedKey = Object.keys(USER_DIRECTORY).find(
+    key => key.replace(/[\s　]+/g, '') === cleanTargetName
+  );
+
+  if (matchedKey && USER_DIRECTORY[matchedKey].url) {
+    await sendWebhook(USER_DIRECTORY[matchedKey].url, messageText);
     console.log(`✅ ${userName} 個人のチャットに通知を送信しました。`);
+  } else {
+    console.error(`❌ 通知失敗: '${userName}' のWebhook URLが見つかりません。`);
   }
 }
 
@@ -383,7 +393,10 @@ app.patch('/api/schedule/:id', async (req, res) => {
       //await notifyAdmins(`❌ *不可および自動再割当*\n${targetDateStr} の担当だった *${updatedDuty.user.name}* さんが不可としたため、新しい担当者として *${bestCandidate.name}* さんを自動割り当てしました。`);
 
       // 🟢 2. 新しい担当者本人へ通知
-      await notifyUser(bestCandidate.name, `${updatedDuty.user.name}さんが不可のため、代わりに${newDuty.date}の鍵開けとなりました。`);
+      await notifyUser(
+  bestCandidate.name, 
+  `🔄 *担当変更のお知らせ*\n${updatedDuty.user.name}さんが不可となったため、新しく ${newDuty.date} の鍵開け当番があなたに割り当てられました。\n\n至急アプリを開いて「承諾」または「不可」の回答をお願いします。`
+);
     }
 
     res.json(updatedDuty);
