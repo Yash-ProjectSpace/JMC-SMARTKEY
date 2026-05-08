@@ -20,7 +20,9 @@ const fetchData = async () => {
       
       if (!Array.isArray(allData)) return;
 
-      const todayStr = new Date().toISOString().split('T')[0];
+     // 🟢 FIX: Force local Japan time instead of UTC to fix the 9-hour bug!
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       // 🟢 1. 【追加】誰かがすでに「承諾(ACCEPTED)」している日付のリストを作る
       const acceptedDatesByAnyone = new Set(
