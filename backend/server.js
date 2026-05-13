@@ -585,12 +585,12 @@ cron.schedule('30 8 * * 5', async () => {
 
   try {
     const publicHolidays = await getHolidays(); 
-    
+    const tokyoTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' });
     let currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
     // 🟢 CALENDAR MATH: Find exactly the Friday of the "week after next"
-    let targetEndDate = new Date();
+    let targetEndDate = new Date(tokyoTimeStr);
     const currentDayOfWeek = targetEndDate.getDay();
     
     let daysUntilFriday = 5 - currentDayOfWeek;
@@ -688,13 +688,13 @@ app.put('/api/users/:id', async (req, res) => {
 cron.schedule('0 10 * * *', async () => {
   console.log('⏰ Running Daily 10:00 AM Cron: Individual Reminders');
   try {
-    const todayStr = new Date().toLocaleDateString('en-CA'); 
+    // 🟢 FIX 1: Force Tokyo timezone so AWS doesn't use UTC!
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' }); 
     
     const upcomingDuties = await prisma.duty.findMany({
       where: { date: { gt: todayStr }, status: { not: 'REJECTED' } },
       include: { user: true }
     });
-
     for (const duty of upcomingDuties) {
       // SMART LOGIC: Accounts for weekends and holidays
       const reminder3DaysBefore = await getTargetWorkingDateBefore(duty.date, 3);
@@ -706,7 +706,7 @@ cron.schedule('0 10 * * *', async () => {
           // 🟢 Normal reminder for people who already accepted
           await notifyUser(
             duty.user.name, 
-            `⏰ *【リマインダー】明日の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番です！朝のご対応よろしくお願いいたします。`
+            `⏰ *【リマインダー】次回の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番です！朝のご対応よろしくお願いいたします。`
           );
           console.log(`[REMINDER] Sent 1-day NORMAL reminder to ${duty.user.name}`);
         } 
@@ -714,7 +714,7 @@ cron.schedule('0 10 * * *', async () => {
           // 🔴 SUPER Urgent reminder for people who still haven't responded
           await notifyUser(
             duty.user.name, 
-            `🚨 *【超至急・未回答】明日の鍵開け当番*\n明日の営業日（${duty.date}）はあなたの鍵開け当番ですが、まだ回答がありません！至急ダッシュボードから「承諾」または「不可」を選択してください。`
+            `🚨 *【超至急・未回答】次回の鍵開け当番*\n次の営業日（${duty.date}）はあなたの鍵開け当番ですが、まだ回答がありません！至急ダッシュボードから「承諾」または「不可」を選択してください。`
           );
           console.log(`[REMINDER] Sent 1-day URGENT action request to ${duty.user.name}`);
         }
@@ -752,7 +752,7 @@ cron.schedule('0 10 * * *', async () => {
 cron.schedule('0 13 * * *', async () => {
   console.log('⏰ Running Daily 1:00 PM Cron: Admin No-Response Alert');
   try {
-    const todayStr = new Date().toLocaleDateString('en-CA'); 
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
     
     // Find only PENDING duties
     const pendingDuties = await prisma.duty.findMany({
