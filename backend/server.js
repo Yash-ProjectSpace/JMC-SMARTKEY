@@ -19,15 +19,22 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // 👤 ユーザー名簿（個人URLと権限の管理）
 // ==========================================
 const USER_DIRECTORY = {
-  // 👑 管理者 (ADMIN)
+  // 👑 管理者 (当番なし - Admins with NO duty)
   "ヤシュワン": { url: process.env.WEBHOOK_YASWANTH, role: "ADMIN" },
   "内木 敦": { url: process.env.WEBHOOK_UCHIKI_SAN, role: "ADMIN" },
   "藤原 志帆": { url: process.env.WEBHOOK_FUJIWARA_SAN, role: "ADMIN" },
+
+  // 👑 管理者 (当番あり - Admins WITH duty)
   "廣瀬 昌美": { url: process.env.WEBHOOK_HIROSE_SAN, role: "ADMIN" },
   "竹﨑 奈保": { url: process.env.WEBHOOK_TAKEZAKI_SAN, role: "ADMIN" },
   "松岡 麻衣": { url: process.env.WEBHOOK_MATSUOKA_SAN, role: "ADMIN" },
-  // 👤 一般ユーザー (USER)
-  //"Om": { url: process.env.WEBHOOK_OM, role: "USER" },
+
+  // 👤 一般ユーザー (当番あり - Users WITH duty)
+  "山下 由菜": { url: process.env.WEBHOOK_YAMASHITA_SAN, role: "USER" },
+  "榛葉 絵美": { url: process.env.WEBHOOK_SHIMBA_SAN, role: "USER" },
+  "金尾 琴乃": { url: process.env.WEBHOOK_KANAO_SAN, role: "USER" },
+  "北川 真也": { url: process.env.WEBHOOK_KITAGAWA_SAN, role: "USER" },
+  "芝 優生": { url: process.env.WEBHOOK_SHIBA_SAN, role: "USER" } // Note: Standardized space
 };
 
 // ==========================================
@@ -99,13 +106,13 @@ async function notifyAdmins(messageText) {
 // ==========================================
 async function findBestCandidate(targetDateStr, blacklistedUserIds = [], inMemoryScores = {}) {
   // 1. Get eligible users (exclude admins and the blacklist for this specific date)
+  const NO_DUTY_NAMES = ["ヤシュワン", "内木 敦", "藤原 志帆"];
+
   const eligibleUsers = await prisma.user.findMany({
     where: {
       NOT: [
-        //{ name: '内木 敦' },
-        //{ name: '藤原 志帆' },
         { id: { in: blacklistedUserIds } },
-        { role: 'VIEWER' }
+        { name: { in: NO_DUTY_NAMES } }
       ]
     }
   });
@@ -410,7 +417,11 @@ app.patch('/api/schedule/:id', async (req, res) => {
 // 3. Get User Stats
 app.get('/api/stats', async (req, res) => {
   try {
-    const users = await prisma.user.findMany({ where: { role: { not: 'VIEWER' } },include: { duties: true } });
+    const NO_DUTY_NAMES = ["ヤシュワン", "内木 敦", "藤原 志帆"];
+    const users = await prisma.user.findMany({ 
+      where: { name: { notIn: NO_DUTY_NAMES } },
+      include: { duties: true } 
+    });
     const stats = users.map(user => {
       const familyName = user.name.split(' ')[0] || user.name; 
       return {
