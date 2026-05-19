@@ -34,7 +34,7 @@ const USER_DIRECTORY = {
   "榛葉 絵美": { url: process.env.WEBHOOK_SHIMBA_SAN, role: "USER" },
   "金尾 琴乃": { url: process.env.WEBHOOK_KANAO_SAN, role: "USER" },
   "北川 真也": { url: process.env.WEBHOOK_KITAGAWA_SAN, role: "USER" },
-  "芝 優生": { url: process.env.WEBHOOK_SHIBA_SAN, role: "USER" } // Note: Standardized space
+  //"芝 優生": { url: process.env.WEBHOOK_SHIBA_SAN, role: "USER" } // Note: Standardized space
 };
 
 // ==========================================
