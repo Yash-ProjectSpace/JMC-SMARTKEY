@@ -27,7 +27,7 @@ async function main() {
     { name: '榛葉 絵美', email: 'e-shimba@jmc-ltd.co.jp', role: 'USER' },
     { name: '金尾 琴乃', email: 'k-kanao@jmc-ltd.co.jp', role: 'USER' },
     { name: '北川 真也', email: 's-kitagawa@jmc-ltd.co.jp', role: 'USER' },
-    //{ name: '芝 優生', email: 'y-shiba@jmc-ltd.co.jp', role: 'USER' }      // Added Shiba-san
+    { name: '芝 優生', email: 'y-shiba@jmc-ltd.co.jp', role: 'USER' }      // Added Shiba-san
   ];
 
   for (const employee of employees) {
