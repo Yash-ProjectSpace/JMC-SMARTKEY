@@ -30,7 +30,6 @@ const USER_DIRECTORY = {
   "松岡 麻衣": { url: process.env.WEBHOOK_MATSUOKA_SAN, role: "ADMIN" },
 
   // 👤 一般ユーザー (当番あり - Users WITH duty)
-  "山下 由菜": { url: process.env.WEBHOOK_YAMASHITA_SAN, role: "USER" },
   "榛葉 絵美": { url: process.env.WEBHOOK_SHIMBA_SAN, role: "USER" },
   "金尾 琴乃": { url: process.env.WEBHOOK_KANAO_SAN, role: "USER" },
   "北川 真也": { url: process.env.WEBHOOK_KITAGAWA_SAN, role: "USER" },

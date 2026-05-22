@@ -8,7 +8,6 @@ async function main() {
     { name: "政岡 由衣", email: "y-masaoka@jmc-ltd.co.jp", role: "VIEWER" },
     { name: "野瀬 悦子", email: "e-nose@jmc-ltd.co.jp", role: "VIEWER" },
     { name: "篠岡 沙季", email: "s-shinooka@jmc-ltd.co.jp", role: "VIEWER" },
-    { name: "山下 由菜", email: "y-yamashita@jmc-ltd.co.jp", role: "VIEWER" },
     { name: "宮本 梨瑛", email: "r-miyamoto@jmc-ltd.co.jp", role: "VIEWER" }
   ];
 
