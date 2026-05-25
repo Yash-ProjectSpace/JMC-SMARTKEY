@@ -230,7 +230,7 @@ app.patch('/api/schedule/:id', async (req, res) => {
         include: { user: true }
       });
 
-      await notifyUser(targetUser.name, `🛠️ *管理者による指定*\n管理者があなたを ${updatedDuty.date} の鍵開け当番に指定しました。システムから承諾をお願いします。`);
+      await notifyUser(targetUser.name, `🛠️ *管理者による指定*\n管理者があなたを ${updatedDuty.date} の持ち帰り当番に指定しました。システムから承諾をお願いします。`);
       
       return res.json(updatedDuty);
     }

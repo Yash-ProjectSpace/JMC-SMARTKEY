@@ -23,7 +23,6 @@ async function main() {
     { name: '松岡 麻衣', email: 'mai-matsuoka@jmc-ltd.co.jp', role: 'ADMIN' }, // Check if this is mai- or m-
 
     // 👤 一般ユーザー (当番あり - Users WITH duty)
-    { name: '山下 由菜', email: 'y-yamashita@jmc-ltd.co.jp', role: 'USER' },
     { name: '榛葉 絵美', email: 'e-shimba@jmc-ltd.co.jp', role: 'USER' },
     { name: '金尾 琴乃', email: 'k-kanao@jmc-ltd.co.jp', role: 'USER' },
     { name: '北川 真也', email: 's-kitagawa@jmc-ltd.co.jp', role: 'USER' },

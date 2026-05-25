@@ -383,7 +383,7 @@ const handleGenerateSchedule = async () => {
                             <select 
                               value={row.assignee}
                               onChange={(e) => handleManualAssign(row.id, e.target.value)}
-                              disabled={isToday(row.date)} /* 🛑 1. ADD THE LOCK HERE */
+                              disabled={false} 
                               className="bg-white border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-[#B01A24] focus:border-[#B01A24] block w-[160px] p-1.5 cursor-pointer font-bold shadow-sm disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed"
                             >
                               {userStats.map(stat => (
@@ -408,17 +408,17 @@ const handleGenerateSchedule = async () => {
     
     {/* BLACK BUTTON: REJECT */}
     <button 
-      onClick={() => handleProxyAction(row.id, 'REJECTED')} 
-      disabled={row.status === 'REJECTED' || isPastDeadline(row.date) || isToday(row.date)}
-      className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-black text-white shadow-md shadow-black/20 hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:hover:bg-black disabled:-translate-y-0 disabled:shadow-sm disabled:cursor-not-allowed"
-    >
-      {row.status === 'REJECTED' ? '不可登録済' : isPastDeadline(row.date) ? '期限切れ' : '不可'}
-    </button>
+  onClick={() => handleProxyAction(row.id, 'REJECTED')} 
+  disabled={row.status === 'REJECTED'}
+  className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-black text-white shadow-md shadow-black/20 hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:bg-slate-900 disabled:text-white/60 disabled:opacity-50 disabled:-translate-y-0 disabled:shadow-sm disabled:cursor-not-allowed"
+>
+  {row.status === 'REJECTED' ? '不可登録済' : '不可'}
+</button>
     
     {/* RED BUTTON: ACCEPT */}
     <button 
-      onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
-      disabled={row.status === 'ACCEPTED' || isToday(row.date)}
+  onClick={() => handleProxyAction(row.id, 'ACCEPTED')} 
+  disabled={row.status === 'ACCEPTED'}
       className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-[#B01A24] text-white shadow-md shadow-[#B01A24]/20 hover:bg-red-800 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:hover:bg-[#B01A24] disabled:-translate-y-0 disabled:shadow-sm disabled:cursor-not-allowed"
     >
       {row.status === 'ACCEPTED' ? '承諾済み' : '承諾'}
@@ -428,7 +428,7 @@ const handleGenerateSchedule = async () => {
     {row.status === 'NOT_NEEDED' ? (
       <button
         onClick={() => handleProxyAction(row.id, 'PENDING')}
-        disabled={isToday(row.date)}
+        disabled={false}
         className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-blue-600 text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
       >
         元に戻す
@@ -436,7 +436,7 @@ const handleGenerateSchedule = async () => {
     ) : (
       <button
         onClick={() => handleProxyAction(row.id, 'NOT_NEEDED')}
-        disabled={isToday(row.date)}
+        disabled={false}
         className="flex items-center justify-center w-[80px] h-[32px] rounded-full font-bold text-[11px] tracking-wider bg-[#64748B] text-white shadow-md shadow-slate-500/20 hover:bg-slate-600 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
       >
         不要
