@@ -105,7 +105,7 @@ async function notifyAdmins(messageText) {
 // ==========================================
 async function findBestCandidate(targetDateStr, blacklistedUserIds = [], inMemoryScores = {}) {
   // 1. Get eligible users (exclude admins and the blacklist for this specific date)
-  const NO_DUTY_NAMES = ["ヤシュワン", "内木 敦", "藤原 志帆"];
+  const NO_DUTY_NAMES = ["ヤシュワン", "内木 敦", "藤原 志帆", "野瀬 悦子"];
 
   const eligibleUsers = await prisma.user.findMany({
     where: {
@@ -416,8 +416,8 @@ app.patch('/api/schedule/:id', async (req, res) => {
 // 3. Get User Stats
 app.get('/api/stats', async (req, res) => {
   try {
-    const NO_DUTY_NAMES = ["ヤシュワン", "内木 敦", "藤原 志帆"];
-    const users = await prisma.user.findMany({ 
+    const NO_DUTY_NAMES = ["ヤシュワン", "内木 敦", "藤原 志帆", "野瀬 悦子"];
+    const users = await prisma.user.findMany({
       where: { name: { notIn: NO_DUTY_NAMES } },
       include: { duties: true } 
     });

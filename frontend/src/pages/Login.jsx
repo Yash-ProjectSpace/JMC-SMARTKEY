@@ -63,30 +63,30 @@ export default function Login({ onGoogleSuccess, onManualLogin, loginError }) {
             </div>
 
             {/* ==============================================
-                🛠️ テスト用手動ログインフォーム（本番ではコメントアウト）
+                📧 メールアドレスでログイン（登録済みユーザーのみ）
                 ============================================== */}
-            {/* <div className="relative flex py-4 items-center mb-4">
+            <div className="relative flex py-4 items-center mb-4">
               <div className="flex-grow border-t border-stone-200"></div>
-              <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold tracking-wider">テスト用ログイン</span>
+              <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold tracking-wider">または</span>
               <div className="flex-grow border-t border-stone-200"></div>
             </div>
 
             <form onSubmit={handleManualSubmit} className="space-y-4">
-              <input 
-                type="email" 
-                placeholder="テスト用メールアドレスを入力" 
+              <input
+                type="email"
+                required
+                placeholder="会社のメールアドレスを入力"
                 value={manualEmail}
                 onChange={(e) => setManualEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#B01A24]/20 focus:border-[#B01A24] transition-all"
               />
-              <button 
+              <button
                 type="submit"
                 className="w-full py-3 bg-slate-800 hover:bg-black text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
               >
-                手動でログイン
+                メールアドレスでログイン
               </button>
             </form>
-            */}
             {/* ============================================== */}
 
             {loginError && (
